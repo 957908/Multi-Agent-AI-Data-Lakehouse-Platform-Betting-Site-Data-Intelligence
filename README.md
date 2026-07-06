@@ -65,7 +65,7 @@ graph TD
 D:\kadam\project\
 ├── melbet_analytics/          # Scraper & database prototypes for Melbet platform
 ├── 10cric_analytics/          # Sports & casino scraper scripts for 10Cric platform
-├── lakehouse_dashboard/       # Front-end UI (index.html, index.css, app.js)
+├── lakehouse_dashboard/       # Front-end UI with RAG chat, Anomaly sandbox, and XAI feature metrics (index.html, index.css, app.js)
 │     └── assets/              # Abstract 3D graphic assets
 ├── lakehouse_ingestion/       # Core Data Lakehouse & AI Services
 │     ├── bronze/              # Bronze storage directory
@@ -74,7 +74,7 @@ D:\kadam\project\
 │     ├── lakehouse_etl.py     # Medallion batch processor (Bronze -> Silver -> Gold)
 │     ├── train_models.py      # ML classification and anomaly training
 │     ├── lakehouse_rag.py     # FAISS vector index building & RAG query pipelines
-│     ├── rag_api.py           # FastAPI REST endpoints (/query, /predict-anomaly)
+│     ├── rag_api.py           # FastAPI REST endpoints (/query, /predict-anomaly, /model-diagnostics)
 │     └── lakehouse_agents.py  # Asynchronous actor-inbox multi-agent orchestration
 └── .gitignore                 # Exclusion configuration for cache, logs & temp files
 ```
