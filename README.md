@@ -1,6 +1,10 @@
 # Multi-Agent AI Data Lakehouse Platform
 ## Betting Site Data Intelligence & Analytics Console
 
+> [!IMPORTANT]
+> **CDAC Final Capstone Project**  
+> This project was developed as the Final Capstone Project for the postgraduate course at **C-DAC (Centre for Development of Advanced Computing)**. It demonstrates core CDAC curriculum competencies, including Distributed Big Data Architectures, Advanced Machine Learning pipelines, RESTful Web Microservices, and Asynchronous Multi-Agent AI design.
+
 This repository implements a fully open-source, high-performance **Multi-Agent AI Data Lakehouse Platform** designed to ingest, process, and analyze dynamic transactional records and game data. 
 
 The project features real-time stream ingestion, a medallion-structured lakehouse architecture (SQLite fallback), classical and anomaly machine learning boundaries, semantic vector search (RAG) using FAISS, and cooperative multi-agent task execution.
