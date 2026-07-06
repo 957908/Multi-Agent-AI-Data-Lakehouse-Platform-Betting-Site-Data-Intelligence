@@ -89,5 +89,63 @@ def predict_anomaly(payload: AnomalyPredictRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ML Prediction failure: {str(e)}")
 
+@app.get("/model-diagnostics")
+def get_model_diagnostics():
+    """Loads trained scikit-learn models from disk to retrieve feature weights, importances, and configuration parameters."""
+    models_dir = os.path.join(os.path.dirname(__file__), "models")
+    
+    response = {
+        "classifier": {"status": "missing"},
+        "anomaly_detector": {"status": "missing"},
+        "clustering": {"status": "missing"}
+    }
+    
+    # 1. Random Forest Classifier
+    clf_path = os.path.join(models_dir, "payment_classifier.joblib")
+    if os.path.exists(clf_path):
+        try:
+            clf = joblib.load(clf_path)
+            feature_names = ["amount", "text_length", "has_upi", "has_bank", "has_crypto"]
+            importances = list(clf.feature_importances_)
+            response["classifier"] = {
+                "status": "loaded",
+                "algorithm": "Random Forest Classifier",
+                "n_estimators": len(clf.estimators_),
+                "features": {name: float(imp) for name, imp in zip(feature_names, importances)}
+            }
+        except Exception as e:
+            response["classifier"] = {"status": "error", "message": str(e)}
+
+    # 2. Isolation Forest Anomaly Detector
+    ad_path = os.path.join(models_dir, "anomaly_detector.joblib")
+    if os.path.exists(ad_path):
+        try:
+            ad = joblib.load(ad_path)
+            response["anomaly_detector"] = {
+                "status": "loaded",
+                "algorithm": "Isolation Forest",
+                "contamination": float(ad.contamination),
+                "features": ["amount", "type_num", "status_num"]
+            }
+        except Exception as e:
+            response["anomaly_detector"] = {"status": "error", "message": str(e)}
+
+    # 3. K-Means Clustering
+    km_path = os.path.join(models_dir, "clustering.joblib")
+    if os.path.exists(km_path):
+        try:
+            km = joblib.load(km_path)
+            response["clustering"] = {
+                "status": "loaded",
+                "algorithm": "K-Means Clustering",
+                "n_clusters": int(km.n_clusters),
+                "inertia": float(km.inertia_),
+                "silhouette_score_baseline": 0.5304
+            }
+        except Exception as e:
+            response["clustering"] = {"status": "error", "message": str(e)}
+            
+    return response
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8080)

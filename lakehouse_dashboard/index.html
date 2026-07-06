@@ -192,8 +192,30 @@
                     </div>
                 </div>
 
-                <!-- Column 2: Interactive RAG Search Engine -->
+                <!-- Column 2: Interactive RAG Search Engine & XAI -->
                 <div class="column">
+                    <!-- Explainable AI (XAI) & Model Diagnostics -->
+                    <div class="card" id="xai-panel" style="margin-bottom: 25px;">
+                        <div class="card-title">
+                            <h3><i class="fa-solid fa-chart-bar"></i> Explainable AI (XAI) & Model Diagnostics</h3>
+                            <span class="status-tag active" id="xai-status">Syncing...</span>
+                        </div>
+                        <div style="padding: 10px 0;">
+                            <h4 style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">Random Forest Feature Importances (Category Classifier)</h4>
+                            <div class="xai-metrics" id="xai-metrics-container">
+                                <!-- Dynamically populated progress bars -->
+                            </div>
+                            <div class="xai-summary" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-purple); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="font-size: 12px; color: var(--text-secondary);">
+                                    <strong>Isolation Forest:</strong> Contamination = <span id="xai-contamination">...</span>
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary); text-align: right;">
+                                    <strong>K-Means:</strong> Silhouette Score = <span id="xai-silhouette">...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card chat-card" id="rag-query">
                         <div class="card-title">
                             <h3><i class="fa-solid fa-comments"></i> Cognitive Semantic Search (RAG)</h3>

@@ -416,4 +416,91 @@ function renderMLResult(panel, isAnomalous, message, source) {
     }
 }
 
+// ==========================================
+// EXPLAINABLE AI (XAI) & DIAGNOSTICS
+// ==========================================
+
+async function loadModelDiagnostics() {
+    const container = document.getElementById("xai-metrics-container");
+    const contaminationElem = document.getElementById("xai-contamination");
+    const silhouetteElem = document.getElementById("xai-silhouette");
+    const statusElem = document.getElementById("xai-status");
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_URL}/model-diagnostics`);
+        if (!response.ok) throw new Error("API Offline");
+        const data = await response.json();
+        
+        statusElem.textContent = "Synced (Live)";
+        statusElem.style.background = "rgba(0, 245, 212, 0.15)";
+        statusElem.style.color = "var(--accent-cyan)";
+        
+        if (data.classifier && data.classifier.status === "loaded") {
+            renderFeatureImportances(container, data.classifier.features);
+        } else {
+            throw new Error("Classifier missing");
+        }
+        
+        if (data.anomaly_detector && data.anomaly_detector.status === "loaded") {
+            contaminationElem.textContent = data.anomaly_detector.contamination.toFixed(2);
+        }
+        
+        if (data.clustering && data.clustering.status === "loaded") {
+            silhouetteElem.textContent = data.clustering.silhouette_score_baseline.toFixed(4);
+        }
+    } catch (e) {
+        console.warn("Diagnostics API offline. Loading cached baseline feature importances...", e);
+        
+        statusElem.textContent = "Offline Mode";
+        statusElem.style.background = "rgba(255, 0, 84, 0.15)";
+        statusElem.style.color = "#ff3366";
+        
+        // Baseline fallback parameters
+        const fallbackFeatures = {
+            "has_upi": 0.4284,
+            "has_bank": 0.2811,
+            "has_crypto": 0.1843,
+            "amount": 0.0815,
+            "text_length": 0.0247
+        };
+        
+        renderFeatureImportances(container, fallbackFeatures);
+        contaminationElem.textContent = "0.05";
+        silhouetteElem.textContent = "0.5304";
+    }
+}
+
+function renderFeatureImportances(container, features) {
+    container.innerHTML = "";
+    
+    // Sort features by weight descending
+    const sorted = Object.entries(features).sort((a, b) => b[1] - a[1]);
+    
+    sorted.forEach(([name, val]) => {
+        const pct = (val * 100).toFixed(1);
+        let displayName = name.replace("has_", "Text Flag: ").toUpperCase();
+        if (name === "amount") displayName = "TRANSACTION AMOUNT";
+        if (name === "text_length") displayName = "STRING METADATA LENGTH";
+        
+        const metricItem = document.createElement("div");
+        metricItem.style.marginBottom = "12px";
+        metricItem.innerHTML = `
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                <span>${displayName}</span>
+                <strong>${pct}%</strong>
+            </div>
+            <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: 3px; overflow: hidden;">
+                <div style="background: linear-gradient(90deg, #00f5d4, #7b2cbf); width: ${pct}%; height: 100%; border-radius: 3px; transition: width 1s ease-in-out;"></div>
+            </div>
+        `;
+        container.appendChild(metricItem);
+    });
+}
+
+// Run Diagnostics on page load
+window.addEventListener("DOMContentLoaded", () => {
+    loadModelDiagnostics();
+});
+
 
