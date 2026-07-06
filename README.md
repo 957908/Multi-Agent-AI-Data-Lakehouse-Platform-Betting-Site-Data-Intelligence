@@ -15,25 +15,25 @@ The project features real-time stream ingestion, a medallion-structured lakehous
 
 ```mermaid
 graph TD
-    subgraph 1. Data Acquisition (Phase 1)
+    subgraph "1. Data Acquisition (Phase 1)"
         Melbet[Melbet Playwright Scraper]
         Cric[10Cric Playwright Scraper]
     end
     
-    subgraph 2. Ingestion & Streaming (Phase 2)
+    subgraph "2. Ingestion & Streaming (Phase 2)"
         Producer1[Melbet Kafka Producer] -->|Topic: melbet-raw-data| Kafka[Apache Kafka Cluster]
         Producer2[10Cric Kafka Producer] -->|Topic: 10cric-raw-data| Kafka
         Kafka -->|Listen & Stream| Consumer[stream_consumer.py]
     end
     
-    subgraph 3. Medallion Storage Lakehouse (Phase 3)
+    subgraph "3. Medallion Storage Lakehouse (Phase 3)"
         Consumer -->|Write Raw JSON| Bronze[Bronze Directory Layers]
         ETL[lakehouse_etl.py] -->|Read Bronze JSON| Transform[Clean & Type Conversion]
         Transform -->|Write Structured| Silver[Silver SQL Tables]
         Transform -->|Write Aggregated| Gold[Gold SQL Analytics]
     end
     
-    subgraph 4. AI & Analytics (Phases 4, 5, 6)
+    subgraph "4. AI & Analytics (Phases 4, 5, 6)"
         Silver -->|Features| ML[Random Forest / Isolation Forest / K-Means]
         Gold -->|Text Serialization| Embed[Sentence-Transformers]
         Embed -->|Dense Embeddings| FAISS[FAISS Vector Store]
@@ -41,7 +41,7 @@ graph TD
         RAG -->|REST API Ports| Web[FastAPI Console Interface]
     end
 
-    subgraph 5. Orchestration (Phase 7)
+    subgraph "5. Orchestration (Phase 7)"
         Agents[lakehouse_agents.py] -->|Asynchronous Message Queues| Actor[Actor-Inbox Coordination]
     end
 ```
