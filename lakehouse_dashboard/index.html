@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Agent Data Lakehouse Analytics Platform</title>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="glass-bg-glow"></div>
+    <div class="glass-bg-glow2"></div>
+
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <h2>AETHERIA</h2>
+            </div>
+            <nav class="nav-links">
+                <a href="#overview" class="active"><i class="fa-solid fa-chart-pie"></i> Overview</a>
+                <a href="#agents"><i class="fa-solid fa-robot"></i> AI Multi-Agents</a>
+                <a href="#ml-models"><i class="fa-solid fa-brain"></i> ML Analytics</a>
+                <a href="#rag-query"><i class="fa-solid fa-magnifying-glass-chart"></i> Semantic RAG</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="pulse-green"></span>
+                    <p>Local API: Online</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Content Area -->
+        <main class="main-content">
+            <!-- Header Section -->
+            <header class="header">
+                <div class="welcome-text">
+                    <h1>Data Lakehouse Console</h1>
+                    <p>Coordinated Multi-Agent Scraping & Analytics Portal</p>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="triggerReindex()"><i class="fa-solid fa-arrows-rotate"></i> Reindex Vector Store</button>
+                    <button class="btn btn-primary" onclick="triggerScraper()"><i class="fa-solid fa-play"></i> Run Agents</button>
+                </div>
+            </header>
+
+            <!-- Hero Section with 3D Render Asset -->
+            <section class="hero-section" id="overview">
+                <div class="hero-details">
+                    <span class="badge">Next-Gen Architecture</span>
+                    <h2>Intelligent Lakehouse Orchestrator</h2>
+                    <p>Ingesting real-time betting flows via distributed scrapers. Structured into Silver and Gold Iceberg/SQLite analytical stores, evaluated by Isolation Forest anomaly boundary models, and indexed for semantic search query retrieval.</p>
+                </div>
+                <div class="hero-visual">
+                    <img src="assets/lakehouse_3d_render.png" alt="Lakehouse 3D Render" class="floating-asset">
+                </div>
+            </section>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>Ingested Volume</h3>
+                        <i class="fa-solid fa-wallet color-purple"></i>
+                    </div>
+                    <div class="value">255,500.00 <span class="unit">INR</span></div>
+                    <div class="card-footer">
+                        <span class="trend trend-up"><i class="fa-solid fa-arrow-trend-up"></i> +14.2%</span>
+                        <span class="context">since last ETL run</span>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>Anomalies Flagged</h3>
+                        <i class="fa-solid fa-triangle-exclamation color-amber"></i>
+                    </div>
+                    <div class="value" id="anomaly-count">2 <span class="unit">Alerts</span></div>
+                    <div class="card-footer">
+                        <span class="trend trend-warn"><i class="fa-solid fa-shield-halved"></i> Active Risk</span>
+                        <span class="context">Isolation Forest evaluated</span>
+                    </div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="card-header">
+                        <h3>Processed Records</h3>
+                        <i class="fa-solid fa-server color-cyan"></i>
+                    </div>
+                    <div class="value">39 <span class="unit">Rows</span></div>
+                    <div class="card-footer">
+                        <span class="trend trend-up"><i class="fa-solid fa-database"></i> Silver DB</span>
+                        <span class="context">Deduplicated & Cleaned</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive ML Inference Sandbox Row -->
+            <section class="card ml-sandbox-card" style="margin-bottom: 35px;">
+                <div class="card-title">
+                    <h3><i class="fa-solid fa-microchip"></i> Real-Time ML Anomaly Inference Sandbox</h3>
+                    <span class="badge" style="margin-bottom: 0; background: rgba(0, 245, 212, 0.1); border-color: rgba(0, 245, 212, 0.3); color: var(--accent-cyan);">Isolation Forest Boundary Simulator</span>
+                </div>
+                <div class="ml-sandbox-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Transaction Amount (INR)</label>
+                        <input type="number" id="predict-amount" value="5000" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-purple); border-radius: 8px; color: #fff; padding: 10px; font-family: var(--font-body); font-size: 14px; outline: none; height: 42px;">
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Transaction Type</label>
+                        <select id="predict-type" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-purple); border-radius: 8px; color: #fff; padding: 10px; font-family: var(--font-body); font-size: 14px; outline: none; height: 42px;">
+                            <option value="DEPOSIT">Deposit</option>
+                            <option value="WITHDRAWAL">Withdrawal</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Transaction Status</label>
+                        <select id="predict-status" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-purple); border-radius: 8px; color: #fff; padding: 10px; font-family: var(--font-body); font-size: 14px; outline: none; height: 42px;">
+                            <option value="SUCCESS">Success</option>
+                            <option value="FAILED">Failed</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="runMLPrediction()" style="height: 42px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Run ML Inference</button>
+                </div>
+                <div id="prediction-result-panel" style="margin-top: 20px; padding: 16px; border-radius: 10px; display: none; transition: all 0.3s ease;">
+                    <!-- Result will be populated here -->
+                </div>
+            </section>
+
+            <!-- Two-Column Layout -->
+            <div class="dashboard-grid">
+                <!-- Column 1: Multi-Agent Logs & ML Clusters -->
+                <div class="column">
+                    <!-- Agent Console Panel -->
+                    <div class="card" id="agents">
+                        <div class="card-title">
+                            <h3><i class="fa-solid fa-network-wired"></i> Asynchronous Agent Orchestration</h3>
+                            <span class="status-tag active">Live Status</span>
+                        </div>
+                        <div class="agent-terminal" id="agent-terminal">
+                            <div class="terminal-line"><span class="timestamp">[13:11:00]</span> <span class="tag tag-info">[INFO]</span> Orchestrator initialized. Spawning worker tasks...</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:01]</span> <span class="tag tag-info">[INFO]</span> ScraperAgent started. Simulating raw events...</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:02]</span> <span class="tag tag-info">[INFO]</span> ValidatorAgent started. Listening for raw streams...</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:03]</span> <span class="tag tag-info">[INFO]</span> AnomalyAgent started. Loading Isolation Forest model...</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:05]</span> <span class="tag tag-info">[INFO]</span> ScraperAgent: Emitted transaction TXN_A101 (1,200 INR)</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:06]</span> <span class="tag tag-success">[VALID]</span> ValidatorAgent: Validated successfully: TXN_A101</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:07]</span> <span class="tag tag-info">[INFO]</span> AnomalyAgent: Transaction TXN_A101 passed anomaly check.</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:09]</span> <span class="tag tag-warn">[WARN]</span> AnomalyAgent: ANOMALY DETECTED: TXN_B202 (Amount: 800 INR). Flagged by isolation boundary.</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:12]</span> <span class="tag tag-info">[INFO]</span> ScraperAgent: Emitted transaction TXN_C303 (3,500 INR)</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:15]</span> <span class="tag tag-critical">[ALERT]</span> AnomalyAgent: ANOMALY DETECTED: TXN_ANOMALY_999 (250,000 INR). Risk Alert dispatched.</div>
+                            <div class="terminal-line"><span class="timestamp">[13:11:22]</span> <span class="tag tag-info">[INFO]</span> ReporterAgent: Compiling final summary report agent_report.md...</div>
+                        </div>
+                    </div>
+
+                    <!-- ML Clustering & Categorization Panel -->
+                    <div class="card" id="ml-models">
+                        <div class="card-title">
+                            <h3><i class="fa-solid fa-circle-nodes"></i> Payment Channel Clustering (K-Means)</h3>
+                            <span class="status-tag active">k=3 Clusters</span>
+                        </div>
+                        <div class="ml-clusters">
+                            <div class="cluster-item border-green">
+                                <div class="cluster-header">
+                                    <h4>Cluster 0 (High Volume & Reliable)</h4>
+                                    <span class="cluster-badge bg-green">Active</span>
+                                </div>
+                                <p><strong>Channels:</strong> GooglePay, PhonePe, SBI Netbanking, USDT-TRC20</p>
+                                <p><strong>Metrics:</strong> Avg Volume: 1.1M INR | Success Rate: 95.0%</p>
+                            </div>
+                            <div class="cluster-item border-amber">
+                                <div class="cluster-header">
+                                    <h4>Cluster 1 (Low Activity & Dormant)</h4>
+                                    <span class="cluster-badge bg-amber">Dormant</span>
+                                </div>
+                                <p><strong>Channels:</strong> UPI / NetBanking, PhonePe (Scraped), Unknown</p>
+                                <p><strong>Metrics:</strong> Avg Volume: 5,400 INR | Success Rate: 50.0%</p>
+                            </div>
+                            <div class="cluster-item border-red">
+                                <div class="cluster-header">
+                                    <h4>Cluster 2 (Low Success Rate / Failed)</h4>
+                                    <span class="cluster-badge bg-red">Risk</span>
+                                </div>
+                                <p><strong>Channels:</strong> Failed-UPI-Terminal</p>
+                                <p><strong>Metrics:</strong> Avg Volume: 15,000 INR | Success Rate: 10.0%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Interactive RAG Search Engine -->
+                <div class="column">
+                    <div class="card chat-card" id="rag-query">
+                        <div class="card-title">
+                            <h3><i class="fa-solid fa-comments"></i> Cognitive Semantic Search (RAG)</h3>
+                            <div class="status-dot-green"></div>
+                        </div>
+                        <div class="chat-area" id="chat-messages">
+                            <div class="chat-bubble bot">
+                                <p>Welcome! Ask me any natural language question about the ingested transactions, users, ROI, or payment channel health.</p>
+                                <span class="time">System</span>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="query-input" placeholder="e.g. Which payment methods are 100% successful?" onkeydown="if(event.key === 'Enter') sendQuery()">
+                            <button class="send-btn" onclick="sendQuery()"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Collapsible Chatbot Assistant Widget -->
+    <div class="chatbot-widget">
+        <div class="chatbot-trigger" onclick="toggleChatbot()">
+            <i class="fa-solid fa-robot text-glow"></i>
+            <span class="notification-dot"></span>
+        </div>
+        <div class="chatbot-window" id="chatbot-window">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <div class="bot-avatar">
+                        <i class="fa-solid fa-brain"></i>
+                        <span class="active-dot"></span>
+                    </div>
+                    <div>
+                        <h4>Aetheria Assistant</h4>
+                        <p>Project Guide Bot</p>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="toggleChatbot()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+                <div class="bot-msg-bubble">
+                    <p>Hi! I'm the Aetheria Guide Bot. I can explain the architecture and design patterns used in this B.Tech/MCA project. Select a topic below to see how it works!</p>
+                </div>
+                <div class="chatbot-chips">
+                    <button class="chip" onclick="askChatbot('architecture')">System Architecture</button>
+                    <button class="chip" onclick="askChatbot('scrapers')">Stealth Scrapers</button>
+                    <button class="chip" onclick="askChatbot('lakehouse')">Data Lakehouse</button>
+                    <button class="chip" onclick="askChatbot('ml')">Machine Learning</button>
+                    <button class="chip" onclick="askChatbot('rag')">Semantic RAG</button>
+                    <button class="chip" onclick="askChatbot('agents')">Multi-Agents</button>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" id="chatbot-input-field" placeholder="Ask about how this project works..." onkeydown="if(event.key === 'Enter') sendChatbotMsg()">
+                <button onclick="sendChatbotMsg()"><i class="fa-solid fa-location-arrow"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

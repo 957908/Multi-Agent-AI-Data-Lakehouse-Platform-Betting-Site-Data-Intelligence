@@ -1,0 +1,16 @@
+{
+    "site": "generic_platform",
+    "payment_method": "iCash.One",
+    "upi_id": "youremail@domain",
+    "bank": {
+        "bank_name": "Mock Bank",
+        "account_number": "1234567890",
+        "ifsc": "MOCK0001234"
+    },
+    "crypto": {
+        "network": "BTC",
+        "address": "14a18e85443bbbd2ae42d7fd49e2c947"
+    },
+    "screenshot": "screenshots/iCash.One.png",
+    "scraped_at": "2026-07-06T14:18:36.976737"
+}

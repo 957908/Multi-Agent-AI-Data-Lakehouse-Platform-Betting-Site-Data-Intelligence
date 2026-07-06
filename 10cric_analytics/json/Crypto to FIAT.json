@@ -1,0 +1,13 @@
+{
+    "site": "generic_platform",
+    "payment_method": "Crypto to FIAT",
+    "upi_id": "youremail@domain",
+    "bank": {
+        "bank_name": "Mock Bank",
+        "account_number": "1234567890",
+        "ifsc": "MOCK0001234"
+    },
+    "crypto": {},
+    "screenshot": "screenshots/Crypto to FIAT.png",
+    "scraped_at": "2026-07-06T14:41:05.475484"
+}

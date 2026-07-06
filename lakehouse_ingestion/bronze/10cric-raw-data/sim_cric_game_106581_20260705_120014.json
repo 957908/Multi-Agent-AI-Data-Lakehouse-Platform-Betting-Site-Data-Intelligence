@@ -1,0 +1,29 @@
+{
+    "scraper": "game",
+    "data": {
+        "page_url": "https://www.10cric247.com/game/?launch=106581&modalId=login",
+        "page_title": "",
+        "headings": [
+            {
+                "tag": "H1",
+                "text": "DAILY CRICKET"
+            },
+            {
+                "tag": "H2",
+                "text": "Log in"
+            }
+        ],
+        "categories": [
+            "Game Launcher"
+        ],
+        "public_content": [
+            "Iframe src: https://scripts.coolretargeting.com/safeframe...",
+            "DAILY CRICKET",
+            "Log in",
+            "Deposit",
+            "Game info"
+        ],
+        "timestamp": "2026-07-05T12:00:14.523097"
+    },
+    "timestamp": "2026-07-05T12:00:14.523097"
+}
