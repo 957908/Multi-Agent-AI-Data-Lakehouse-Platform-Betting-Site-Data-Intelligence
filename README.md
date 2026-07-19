@@ -7,12 +7,20 @@
 
 ---
 
+## ⚡ Live Console Links (Local Run)
+Once you boot up the services on your machine, you can access them via the following live URLs:
+* 🖥️ **React Dashboard Client**: [http://localhost:3000](http://localhost:3000)
+* ⚙️ **FastAPI Swagger API Documentation**: [http://localhost:8085/docs](http://localhost:8085/docs)
+* 📊 **Grafana Monitoring Dashboard**: [http://localhost:3001](http://localhost:3001)
+
+---
+
 ## 1. System Folder Reorganization
 
 The repository has been refactored into modular cleanliness:
 
 * **`frontend/`**: React + TypeScript + Vite dashboard using Tailwind CSS and Recharts. Runs on port `3000`.
-* **`backend/`**: FastAPI REST API following Repository Pattern, mapping models/schemas and supporting JWT session authentication. Runs on port `8000`.
+* **`backend/`**: FastAPI REST API following Repository Pattern, mapping models/schemas and supporting JWT session authentication. Runs on port `8085`.
 * **`data_collection/`**: Centralized **Scrapy** project integrating **Playwright** browser middleware for SPA rendering, proxy rotation, and user-agent spoofing.
 * **`streaming/`**: Kafka producer and consumer scripts handling raw payloads with DLQ routing.
 * **`stream_processing/`**: Apache Flink consumer simulation performing cleaning and tumbling window metrics.
