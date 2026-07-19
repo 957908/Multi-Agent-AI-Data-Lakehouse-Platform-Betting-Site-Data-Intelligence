@@ -7,17 +7,17 @@
 
 ---
 
-## ⚡ Local Live Console Registry
+## ⚡ Live Console Registry
 
-Once you spin up the services using the runner script or Docker compose, access the running modules locally using the registry below:
+Access the running modules on your web environment or spin them up locally:
 
-| Component / Service | Port | Endpoint Link | Dev Status Badge |
+| Component / Service | Environment | Access Link | Status Badge |
 | :--- | :---: | :--- | :--- |
-| **Vite React UI Console** | `3000` | [http://localhost:3000](http://localhost:3000) | ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB) |
-| **FastAPI REST Backend** | `8085` | [http://localhost:8085/docs](http://localhost:8085/docs) | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi) |
-| **Grafana Metrics Analytics** | `3001` | [http://localhost:3001](http://localhost:3001) | ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white) |
-| **Kafdrop Event Viewer** | `9000` | [http://localhost:9000](http://localhost:9000) | ![Kafka](https://img.shields.io/badge/Kafka_Kafdrop-231F20?style=flat-square&logo=apache-kafka&logoColor=white) |
-| **MinIO Storage Dashboard** | `9001` | [http://localhost:9001](http://localhost:9001) | ![MinIO](https://img.shields.io/badge/MinIO_S3-C92847?style=flat-square&logo=minio&logoColor=white) |
+| **GitHub Pages Web Console** | **Live Web** | [https://957908.github.io/Multi-Agent-AI-Data-Lakehouse-Platform-Betting-Site-Data-Intelligence/](https://957908.github.io/Multi-Agent-AI-Data-Lakehouse-Platform-Betting-Site-Data-Intelligence/) | ![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-222222?style=flat-square&logo=github&logoColor=white) |
+| **Vite React UI Dashboard** | **Local Dev** | [http://localhost:3000](http://localhost:3000) | ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB) |
+| **FastAPI REST Backend** | **Local API** | [http://localhost:8085/docs](http://localhost:8085/docs) | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi) |
+| **Grafana Metrics Analytics** | **Local Dev** | [http://localhost:3001](http://localhost:3001) | ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white) |
+| **MinIO Storage Dashboard** | **Local Dev** | [http://localhost:9001](http://localhost:9001) | ![MinIO](https://img.shields.io/badge/MinIO_S3-C92847?style=flat-square&logo=minio&logoColor=white) |
 
 ---
 
