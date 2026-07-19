@@ -1,0 +1,50 @@
+# Python Caches
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Environment Variables
+.env
+**/.env
+
+# Large model binaries (optional to ignore, but we keep joblib for demo)
+# D:/kadam/project/lakehouse_ingestion/models/*.joblib
+
+# Logs & temp execution output
+**/*.log
+**/logs/
+**/output/
+**/OUTPUT_10/
+
+# Scraper diagnostic captures (excluding assets)
+**/screenshots/*.png
+!**/lakehouse_dashboard/assets/*.png
+
+# IDE configs
+.vscode/
+.idea/
+.DS_Store
+
+# Node dependencies & builds
+**/node_modules/
+**/dist/
+**/build/
+
+# Local databases & caches
+**/*.db
+**/*.db-journal
+**/*.index
+**/*.csv
+backend/app/betting_lakehouse.db
+rag_service/vector_store/faiss_index.index
+rag_service/vector_store/metadata.csv
+
+# Temporary Scraper Outputs & Debug captures
+**/html/
+**/json/
+**/auth/
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
