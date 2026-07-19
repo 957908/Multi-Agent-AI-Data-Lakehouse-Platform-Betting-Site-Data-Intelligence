@@ -1,0 +1,10 @@
+{
+    "ref_number": "MEL_TXN_9988",
+    "user_id": "USER_MEL_889",
+    "platform_name": "Melbet",
+    "amount": 7500.0,
+    "method": "PhonePe",
+    "type": "DEPOSIT",
+    "status": "SUCCESS",
+    "raw_text": "IMPS transfer matching reference MEL_TXN_9988"
+}

@@ -1,0 +1,27 @@
+{
+    "experiment_name": "Betting_Data_Intelligence_MLOps",
+    "run_id": "672256",
+    "timestamp": "2026-07-19T16:59:18.176102",
+    "metrics": {
+        "random_forest_estimators": 100,
+        "isolation_forest_contamination": 0.03,
+        "kmeans_inertia": 4500200.0
+    },
+    "registered_models": [
+        {
+            "name": "payment_classifier",
+            "version": "1.0",
+            "stage": "Production"
+        },
+        {
+            "name": "anomaly_detector",
+            "version": "1.0",
+            "stage": "Production"
+        },
+        {
+            "name": "clustering",
+            "version": "1.0",
+            "stage": "Production"
+        }
+    ]
+}

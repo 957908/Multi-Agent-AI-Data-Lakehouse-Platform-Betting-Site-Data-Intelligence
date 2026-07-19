@@ -25,3 +25,26 @@
 .vscode/
 .idea/
 .DS_Store
+
+# Node dependencies & builds
+**/node_modules/
+**/dist/
+**/build/
+
+# Local databases & caches
+**/*.db
+**/*.db-journal
+**/*.index
+**/*.csv
+backend/app/betting_lakehouse.db
+rag_service/vector_store/faiss_index.index
+rag_service/vector_store/metadata.csv
+
+# Temporary Scraper Outputs & Debug captures
+**/html/
+**/json/
+**/auth/
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif

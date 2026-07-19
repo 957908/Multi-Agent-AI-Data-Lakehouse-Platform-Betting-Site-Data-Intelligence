@@ -1,0 +1,10 @@
+{
+    "ref_number": "CRIC_TXN_0021",
+    "user_id": "USER_CRIC_110",
+    "platform_name": "10Cric",
+    "amount": 15000.0,
+    "method": "UPI / NetBanking",
+    "type": "DEPOSIT",
+    "status": "SUCCESS",
+    "raw_text": "Deposit via standard UPI netbanking gateway"
+}

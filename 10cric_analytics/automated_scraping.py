@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import time
 import json
@@ -6,6 +7,13 @@ import base64
 from datetime import datetime, timezone
 import urllib.parse
 from dotenv import load_dotenv
+
+# Ensure console output uses UTF-8 to prevent UnicodeEncodeError on Windows
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 from bs4 import BeautifulSoup
 from PIL import Image
 from pyzbar.pyzbar import decode
@@ -201,8 +209,17 @@ class AutomatedPaymentScraper:
             print("Page load timeout - continuing anyway")
 
     def switch_to_payment_iframe(self):
-        """Find and switch to payment iframe"""
+        """Find and switch to payment iframe if needed, or stay in default context if cashier is visible"""
         self.driver.switch_to.default_content()
+        
+        # Check if cashier cards are already visible in default context
+        try:
+            elements = self.driver.find_elements(By.CSS_SELECTOR, "div[class*='PaymentRouteCardBase_root'], div[class*='PaymentRouteCard']")
+            if len(elements) > 0:
+                print("✓ Cashier cards visible in default context. No iframe switch needed.")
+                return True
+        except:
+            pass
         
         iframe_selectors = [
             "iframe[name*='payment']",
@@ -215,12 +232,14 @@ class AutomatedPaymentScraper:
 
         for selector in iframe_selectors:
             try:
-                iframe = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
+                # Use a short timeout of 2 seconds to avoid hanging on non-existent iframes
+                short_wait = WebDriverWait(self.driver, 2)
+                iframe = short_wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
                 self.driver.switch_to.frame(iframe)
                 print(f"Switched to payment iframe: {selector}")
                 self.wait_for_page_load()
                 return True
-            except (TimeoutException, NoSuchElementException):
+            except:
                 continue
 
         print("No payment iframe found")
@@ -230,7 +249,7 @@ class AutomatedPaymentScraper:
         try:
             payment_elements = self.driver.find_elements(
                 By.CSS_SELECTOR,
-                "[class*='PaymentRouteCardBase_root']"
+                "[class*='PaymentRouteCardBase_root'], [class*='PaymentRouteCard']"
             )
 
             print(f"Found {len(payment_elements)} payment methods")
@@ -607,6 +626,9 @@ class AutomatedPaymentScraper:
     def extract_plain_text(self, html):
         """Extract plain text + useful attribute values, with all tags removed"""
         soup = BeautifulSoup(html, "html.parser")
+        # Remove script, style, head, meta, link, noscript tags to prevent false matches on build IDs/JS variables
+        for tag in soup(["script", "style", "head", "meta", "link", "noscript"]):
+            tag.decompose()
         collected_texts = []
 
         visible_text = soup.get_text(separator="\n", strip=True)
@@ -898,18 +920,33 @@ class AutomatedPaymentScraper:
         payment_iframe = None
         for frame in iframes:
             try:
+                if not frame.is_displayed():
+                    continue
+                size = frame.size
+                if size["width"] < 100 or size["height"] < 100:
+                    continue
+                
                 src = frame.get_attribute("src") or ""
                 id_attr = frame.get_attribute("id") or ""
                 name = frame.get_attribute("name") or ""
-                if any(term in src.lower() or term in id_attr.lower() or term in name.lower() for term in ["payment", "deposit", "paysystem", "cashier"]):
+                if any(term in src.lower() or term in id_attr.lower() or term in name.lower() for term in ["payment", "deposit", "paysystem", "cashier", "checkout", "gateway"]):
                     payment_iframe = frame
                     break
             except:
                 continue
                 
-        # If no specific payment iframe is identified, use the first available iframe as fallback
-        if not payment_iframe and iframes:
-            payment_iframe = iframes[0]
+        # If no specific payment iframe is identified, use a large visible frame as fallback
+        if not payment_iframe:
+            for frame in iframes:
+                try:
+                    if frame.is_displayed():
+                        size = frame.size
+                        if size["width"] > 300 and size["height"] > 300:
+                            payment_iframe = frame
+                            print(f" -> Found large visible fallback iframe: size={size['width']}x{size['height']}")
+                            break
+                except:
+                    continue
             
         if iframe_found and payment_iframe:
             print("✓ Payment iframe found. Scraping iframe...")
@@ -946,12 +983,43 @@ class AutomatedPaymentScraper:
                 self.driver.switch_to.window(self.driver.window_handles[0])
                 time.sleep(2)
             else:
-                # Go back in browser history
-                print("Navigating back in history...")
-                self.driver.back()
+                self.driver.switch_to.default_content()
+                
+                # Check if cashier cards are already visible in default context
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, "div[class*='PaymentRouteCardBase_root'], div[class*='PaymentRouteCard']")
+                    if len(elements) > 0:
+                        print("✓ Cashier cards visible in default context. No reopen needed.")
+                        return True
+                except:
+                    pass
+                
+                # Close cashier modal to reset state
+                close_selectors = [
+                    "button[aria-label='Close']",
+                    "button.close",
+                    ".modal-close",
+                    ".close-dialog-btn",
+                    "//button[text()='X']"
+                ]
+                for sel in close_selectors:
+                    try:
+                        if sel.startswith("//"):
+                            btn = self.driver.find_element(By.XPATH, sel)
+                        else:
+                            btn = self.driver.find_element(By.CSS_SELECTOR, sel)
+                        if btn.is_displayed():
+                            btn.click()
+                            print(f"Closed cashier modal using selector: {sel}")
+                            time.sleep(2)
+                            break
+                    except:
+                        continue
+                
+                # Reopen cashier modal
+                self.navigate_to_deposit()
                 time.sleep(3)
                 
-            # Re-switch to payment iframe
             self.switch_to_payment_iframe()
             return True
         except Exception as e:
@@ -1027,6 +1095,7 @@ class AutomatedPaymentScraper:
                         print("⚠️ Element load failed. Refreshing page...")
                         self.driver.refresh()
                         time.sleep(5)
+                        self.navigate_to_deposit()
                         self.switch_to_payment_iframe()
                         payment_elements = self.extract_payment_methods()
                         try:

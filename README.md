@@ -2,150 +2,139 @@
 ## Betting Site Data Intelligence & Analytics Console
 
 > [!IMPORTANT]
-> **CDAC Final Capstone Project**  
-> This project was developed as the Final Capstone Project for the postgraduate course at **C-DAC (Centre for Development of Advanced Computing)**. It demonstrates core CDAC curriculum competencies, including Distributed Big Data Architectures, Advanced Machine Learning pipelines, RESTful Web Microservices, and Asynchronous Multi-Agent AI design.
-
-This repository implements a fully open-source, high-performance **Multi-Agent AI Data Lakehouse Platform** designed to ingest, process, and analyze dynamic transactional records and game data. 
-
-The project features real-time stream ingestion, a medallion-structured lakehouse architecture (SQLite fallback), classical and anomaly machine learning boundaries, semantic vector search (RAG) using FAISS, and cooperative multi-agent task execution.
+> **CDAC Final Capstone Project - Clean Architecture Refactoring**  
+> Reorganized the platform into Clean Architecture separation of concerns: Frontend, Backend API, Data Collection (Scrapy + Playwright), Streaming (Kafka), Storage (Iceberg + Nessie + PySpark), ML Models, RAG Search, and AI Agents.
 
 ---
 
-## 1. System Architecture
+## 1. System Folder Reorganization
 
+The repository has been refactored into modular cleanliness:
+
+* **`frontend/`**: React + TypeScript + Vite dashboard using Tailwind CSS and Recharts. Runs on port `3000`.
+* **`backend/`**: FastAPI REST API following Repository Pattern, mapping models/schemas and supporting JWT session authentication. Runs on port `8000`.
+* **`data_collection/`**: Centralized **Scrapy** project integrating **Playwright** browser middleware for SPA rendering, proxy rotation, and user-agent spoofing.
+* **`streaming/`**: Kafka producer and consumer scripts handling raw payloads with DLQ routing.
+* **`stream_processing/`**: Apache Flink consumer simulation performing cleaning and tumbling window metrics.
+* **`storage/`**: PySpark batch ETL job configuring Nessie catalog and saving Iceberg tables on MinIO S3 bucket replica.
+* **`ml_models/`**: scikit-learn pipeline scripts training Random Forest, Isolation Forest, K-Means models and registering them to mock MLflow tracking.
+* **`rag_service/`**: FAISS index builder utilizing `sentence-transformers` and LangChain query routers.
+* **`agents/`**: Cooperative crew simulation mapping worker actings (Scraper, Validator, Anomaly, Reporter).
+* **`monitoring/`**: Prometheus config scraping backend diagnostic metrics and routing to Grafana (port `3001`).
+
+---
+
+## 2. Platform Architecture Diagrams
+
+### Ingestion & Stream Processing Sequence
 ```mermaid
-graph TD
-    subgraph "1. Data Acquisition (Phase 1)"
-        Melbet[Melbet Playwright Scraper]
-        Cric[10Cric Playwright Scraper]
-    end
-    
-    subgraph "2. Ingestion & Streaming (Phase 2)"
-        Producer1[Melbet Kafka Producer] -->|Topic: melbet-raw-data| Kafka[Apache Kafka Cluster]
-        Producer2[10Cric Kafka Producer] -->|Topic: 10cric-raw-data| Kafka
-        Kafka -->|Listen & Stream| Consumer[stream_consumer.py]
-    end
-    
-    subgraph "3. Medallion Storage Lakehouse (Phase 3)"
-        Consumer -->|Write Raw JSON| Bronze[Bronze Directory Layers]
-        ETL[lakehouse_etl.py] -->|Read Bronze JSON| Transform[Clean & Type Conversion]
-        Transform -->|Write Structured| Silver[Silver SQL Tables]
-        Transform -->|Write Aggregated| Gold[Gold SQL Analytics]
-    end
-    
-    subgraph "4. AI & Analytics (Phases 4, 5, 6)"
-        Silver -->|Features| ML[Random Forest / Isolation Forest / K-Means]
-        Gold -->|Text Serialization| Embed[Sentence-Transformers]
-        Embed -->|Dense Embeddings| FAISS[FAISS Vector Store]
-        FAISS -->|Retrieval Context| RAG[lakehouse_rag.py / FLAN-T5-Base]
-        RAG -->|REST API Ports| Web[FastAPI Console Interface]
-    end
+sequenceDiagram
+    autonumber
+    participant Scrapy as Scrapy + Playwright Crawler
+    participant Broker as Kafka Cluster (9092)
+    participant Flink as Flink Stream Processor
+    participant Database as PostgreSQL / DB Server
+    participant Storage as MinIO Bronze Layer
 
-    subgraph "5. Orchestration (Phase 7)"
-        Agents[lakehouse_agents.py] -->|Asynchronous Message Queues| Actor[Actor-Inbox Coordination]
-    end
+    Scrapy->>Broker: Emit raw transaction payload
+    Broker->>Flink: Poll stream event
+    Flink->>Flink: Validate & Deduplicate (ref_number)
+    Flink->>Database: Persist validated transaction details
+    Broker->>Storage: Ingest raw JSON logs
 ```
 
-### Core Pipeline Flow:
-1. **Scrapers** navigate dynamically rendered single-page apps (SPAs) using Playwright to extract transactional states.
-2. **Kafka Event Brokers** capture and queue raw events to prevent data loss.
-3. **Medallion ETL Pipeline** processes the raw events through:
-   * **Bronze**: Raw unvalidated JSON payloads.
-   * **Silver**: Deduplicated, cleaned, and type-validated relational schemas.
-   * **Gold**: Aggregated business and channel reliability metrics.
-4. **Machine Learning Models** classify channels (Random Forest), score anomalies (Isolation Forest), and group performance (K-Means).
-5. **FAISS Vector Database** embeds and indexes textual logs to serve context-rich inputs to local LLMs (RAG).
-6. **Multi-Agent Actor Loop** coordinates background validators and reporting engines asynchronously.
+### Relational Entity Relationship Diagram (ERD)
+```mermaid
+erDiagram
+    PLATFORMS {
+        int id PK
+        string name
+        string url
+        float trust_score
+        float risk_score
+    }
+    PAYMENT_METHODS {
+        int id PK
+        string name
+        string type
+        float reliability_score
+    }
+    TRANSACTIONS {
+        int id PK
+        string ref_number
+        string user_id
+        int platform_id FK
+        int method_id FK
+        float amount
+        string type
+        string status
+        boolean is_anomalous
+    }
+    REVIEWS {
+        int id PK
+        int platform_id FK
+        string author
+        float rating
+        string content
+    }
+    COMPLAINTS {
+        int id PK
+        int platform_id FK
+        string title
+        string description
+        string status
+    }
+
+    PLATFORMS ||--o{ TRANSACTIONS : "hosts"
+    PLATFORMS ||--o{ REVIEWS : "receives"
+    PLATFORMS ||--o{ COMPLAINTS : "has"
+    PAYMENT_METHODS ||--o{ TRANSACTIONS : "processes"
+```
 
 ---
 
-## 2. Directory Structure
+## 3. Installation & Getting Started
 
+### Step 1: Install Python and Node Libraries
+1. Install Python packages:
+   ```powershell
+   pip install pandas numpy scikit-learn joblib sentence-transformers faiss-cpu fastapi uvicorn playwright sqlalchemy passlib python-jose email-validator kafka-python
+   playwright install
+   ```
+2. Install Frontend Node modules:
+   ```powershell
+   cd D:\kadam\project\frontend\
+   npm install
+   ```
+
+### Step 2: Spin Up Infrastructure Containers
+Use Docker Compose from the root directory to launch databases, event brokers, and dashboards:
+```powershell
+cd D:\kadam\project\
+docker-compose up -d
 ```
-D:\kadam\project\
-├── melbet_analytics/          # Scraper & database prototypes for Melbet platform
-├── 10cric_analytics/          # Sports & casino scraper scripts for 10Cric platform
-├── lakehouse_dashboard/       # Front-end UI with RAG chat, Anomaly sandbox, and XAI feature metrics (index.html, index.css, app.js)
-│     └── assets/              # Abstract 3D graphic assets
-├── lakehouse_ingestion/       # Core Data Lakehouse & AI Services
-│     ├── bronze/              # Bronze storage directory
-│     ├── models/              # Saved ML model joblib binaries
-│     ├── vector_store/        # FAISS vector store database files
-│     ├── lakehouse_etl.py     # Medallion batch processor (Bronze -> Silver -> Gold)
-│     ├── train_models.py      # ML classification and anomaly training
-│     ├── lakehouse_rag.py     # FAISS vector index building & RAG query pipelines
-│     ├── rag_api.py           # FastAPI REST endpoints (/query, /predict-anomaly, /model-diagnostics)
-│     └── lakehouse_agents.py  # Asynchronous actor-inbox multi-agent orchestration
-└── .gitignore                 # Exclusion configuration for cache, logs & temp files
+*Verify containers running inside your Docker client console.*
+
+### Step 3: Run Setup & Startup Pipeline
+We created a **Unified Setup and Startup Runner script** to make it extremely easy to run and test the entire Data Lakehouse platform. 
+Run:
+```powershell
+python D:\kadam\project\run_project_pipeline.py
 ```
+This script will verify your dependencies, initialize the database schema, simulate ingestion data, run the ETL job, train machine learning classifiers, and help you launch FastAPI, Grafana, and the dashboard with ease.
 
 ---
 
-## 3. Installation & Setup Guide
+## 4. Platform Endpoints Summary
 
-Follow these steps to set up and run the entire platform locally on your computer.
-
-### Step 1: Install Python Libraries
-Open your terminal (PowerShell or CMD) and run:
-```powershell
-pip install pandas numpy scikit-learn joblib sentence-transformers faiss-cpu fastapi uvicorn playwright
-playwright install
-```
-
-### Step 2: Initialize Database and Populate Test Data
-Navigate to the central ingestion directory:
-```powershell
-cd D:\kadam\project\lakehouse_ingestion\
-```
-1. **Initialize the schema**:
-   ```powershell
-   python initialize_lakehouse.py
-   ```
-2. **Simulate Bronze logs**:
-   ```powershell
-   python simulate_bronze_data.py
-   ```
-3. **Execute Medallion ETL (Bronze -> Silver -> Gold)**:
-   ```powershell
-   python lakehouse_etl.py
-   ```
-   *Note: This script uses an incremental loading logic to filter duplicates and prevent UNIQUE constraint failures on successive runs.*
-
-### Step 3: Train Machine Learning Models
-Train your category classification, anomaly detection, and payment clustering algorithms:
-```powershell
-python train_models.py
-```
-*Models are automatically evaluated and written to `lakehouse_ingestion/models/`.*
-
-### Step 4: Sync FAISS Index and Start FastAPI Backend
-1. **Generate the dense embeddings and build the index**:
-   ```powershell
-   python lakehouse_rag.py --reindex
-   ```
-2. **Launch the REST API server**:
-   ```powershell
-   python rag_api.py
-   ```
-   *Leave this terminal running. It hosts backend services on port `8080`.*
-
-### Step 5: Launch the Frontend Web Dashboard Console
-Open a new terminal window and run:
-```powershell
-cd D:\kadam\project\lakehouse_dashboard\
-python -m http.server 8000
-```
-Open your web browser and navigate to: **`http://localhost:8000/`** (or `http://127.0.0.1:8000/`).
-
-Here you can:
-* Query the project chatbot guide in the bottom right.
-* Type custom questions to run the FAISS RAG model.
-* Access the **Interactive ML Inference Sandbox** to test transaction anomaly limits dynamically.
-
-### Step 6: Execute the Multi-Agent Simulation
-To run the background coordinated Actor-Inbox messaging loops:
-```powershell
-cd D:\kadam\project\lakehouse_ingestion\
-python lakehouse_agents.py
-```
-*This writes a clean summary markdown report to `lakehouse_ingestion/agent_report.md`.*
+| Endpoint | Method | Role | Access |
+| :--- | :--- | :--- | :--- |
+| `/api/auth/register` | `POST` | Register User accounts | Public |
+| `/api/auth/login` | `POST` | Authenticate & retrieve JWT session | Public |
+| `/api/platforms` | `GET` | Get betting site ratings and metrics | Public |
+| `/api/transactions` | `GET` | Get deduplicated data streams | User |
+| `/api/transactions/anomalies` | `GET` | Get flagged ML anomaly records | User |
+| `/api/query` | `POST` | Query vector database (RAG chat) | Public |
+| `/api/predict-anomaly` | `POST` | Sandbox Isolation Forest boundary test | Public |
+| `/api/agents/run` | `POST` | Start background CrewAI simulation task | User |
+| `/api/model-diagnostics` | `GET` | Get loaded scikit-learn models info | Public |

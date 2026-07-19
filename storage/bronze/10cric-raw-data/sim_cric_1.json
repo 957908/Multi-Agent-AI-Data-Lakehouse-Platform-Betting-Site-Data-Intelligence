@@ -1,0 +1,10 @@
+{
+    "ref_number": "CRIC_TXN_0022",
+    "user_id": "USER_CRIC_110",
+    "platform_name": "10Cric",
+    "amount": 4500.0,
+    "method": "UPI",
+    "type": "WITHDRAWAL",
+    "status": "SUCCESS",
+    "raw_text": "Withdrawal processed back to client's VPA payee address: user@upi"
+}

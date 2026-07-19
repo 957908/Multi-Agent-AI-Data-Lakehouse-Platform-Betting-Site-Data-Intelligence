@@ -1,0 +1,10 @@
+{
+    "ref_number": "MEL_TXN_ANOMALY",
+    "user_id": "USER_MEL_889",
+    "platform_name": "Melbet",
+    "amount": 150000.0,
+    "method": "UPI",
+    "type": "DEPOSIT",
+    "status": "SUCCESS",
+    "raw_text": "Large amount flag trigger - check client info status"
+}

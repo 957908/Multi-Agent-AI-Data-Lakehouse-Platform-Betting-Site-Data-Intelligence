@@ -2,8 +2,17 @@ import asyncio
 import os
 import re
 import json
+import sys
 from datetime import datetime
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
+from bs4 import BeautifulSoup
+
+# Ensure console output uses UTF-8 to prevent UnicodeEncodeError on Windows
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # Setup mock folders
 os.makedirs("html", exist_ok=True)
@@ -108,11 +117,13 @@ async def find_payment_method_elements(page):
     return None, []
 
 async def find_payment_method_by_name(page, name):
+    # Wait for cashier cards to load/render
+    await page.wait_for_timeout(3000)
     # Prefer text-based locator matching for card selection
     try:
-        locator = page.get_by_text(name, exact=False)
-        if await locator.count() > 0:
-            return await locator.first.element_handle()
+        locator = page.get_by_text(name, exact=False).first
+        await locator.wait_for(state="attached", timeout=6000)
+        return await locator.element_handle()
     except Exception:
         pass
 
@@ -150,15 +161,17 @@ async def find_payment_method_by_name(page, name):
     return None
 
 async def is_cashier_open(page):
-    try:
-        body_text = (await page.locator("body").inner_text() or "").lower()
-    except Exception:
-        body_text = ""
+    if "modalId=cashier" in page.url:
+        return True
 
-    if "add funds" in body_text or "add money" in body_text or "add fund" in body_text:
-        return True
-    if "fiat" in body_text and "crypto" in body_text:
-        return True
+    # Or check if payment cards are visible
+    try:
+        count = await page.locator("div[class*='PaymentRouteCard']").count()
+        if count > 0:
+            return True
+    except Exception:
+        pass
+
     return False
 
 async def wait_for_cashier_tiles(page, timeout=8000):
@@ -186,8 +199,12 @@ async def js_click(page, selector):
     return False
 
 async def open_cashier(page):
-    if await is_cashier_open(page) or await wait_for_cashier_tiles(page):
+    if await wait_for_cashier_tiles(page, timeout=3000):
         return True
+
+    if await is_cashier_open(page):
+        if await wait_for_cashier_tiles(page, timeout=5000):
+            return True
 
     deposit_selectors = [
         "[data-uat='header-deposit-button']",
@@ -269,7 +286,7 @@ async def close_cashier(page):
 
     # fallback: reload the page and reopen if needed
     try:
-        await page.goto(FUNDS_URL, wait_until="networkidle")
+        await page.goto(FUNDS_URL, wait_until="load")
         await page.wait_for_timeout(3000)
     except Exception:
         pass
@@ -282,7 +299,7 @@ async def ensure_cashier_open(page):
 
     for attempt in range(2):
         try:
-            await page.goto(FUNDS_URL, wait_until="networkidle")
+            await page.goto(FUNDS_URL, wait_until="load")
             await page.wait_for_timeout(3000)
         except Exception:
             pass
@@ -291,7 +308,7 @@ async def ensure_cashier_open(page):
             return True
 
     try:
-        await page.goto("https://www.10cric247.com/", wait_until="networkidle")
+        await page.goto("https://www.10cric247.com/", wait_until="load")
         await page.wait_for_timeout(3000)
     except Exception:
         pass
@@ -304,55 +321,226 @@ async def extract_payment_data(page_context, method_name):
     
     # Step 8: Get page source
     html_content = await page_context.content()
-    with open(f"html/{method_name}.html", "w", encoding="utf-8") as f:
+    safe_method_name = re.sub(r"[^\w\-.]", "_", method_name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    html_path = f"html/{safe_method_name}_{timestamp}.html"
+    with open(html_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    # Placeholders for data extraction
-    upi_id = None
+    # Use BeautifulSoup to parse HTML content
+    soup = BeautifulSoup(html_content, "html.parser")
+    
+    # Remove script, style, head, meta, link, noscript tags to prevent false matches on build IDs/JS variables
+    for tag in soup(["script", "style", "head", "meta", "link", "noscript"]):
+        tag.decompose()
+    
+    # Extract plain text
+    collected = []
+    visible = soup.get_text(separator="\n", strip=True)
+    if visible:
+        collected.append(visible)
+    for el in soup.find_all(True):
+        for attr, val in el.attrs.items():
+            if isinstance(val, (list, tuple)):
+                val = " ".join(val)
+            if val and (attr in ["value", "alt", "title", "aria-label", "placeholder"] or attr.startswith("data-")):
+                collected.append(str(val).strip())
+    plain_text = "\n".join(collected)
+    plain_text = re.sub(r"\n\s*\n+", "\n\n", plain_text)
+    plain_text = "\n".join(x.strip() for x in plain_text.splitlines() if x.strip())
+
+    # Extract details using BS4 and regex
+    upi_details = {"upi_id": "", "upi_name": ""}
+    # 1. Regex search for UPI IDs
+    found_upis = UPI_REGEX.findall(plain_text)
+    # Filter out common support emails or generic domains if matched
+    filtered_upis = [u for u in found_upis if not any(x in u.lower() for x in ["support@", "info@", "help@", "youremail@", "domain.com", "10cric"])]
+    if filtered_upis:
+        upi_details["upi_id"] = filtered_upis[0]
+
+    # 2. DOM-based search for labels
+    for label in soup.find_all(string=re.compile(r"UPI ID|VPA|Payee Name|Name", re.IGNORECASE)):
+        try:
+            parent = label.parent
+            next_text = parent.get_text() if parent else ""
+            cleaned = next_text.replace(str(label), "").strip(": \n")
+            if "ID" in str(label).upper() and not upi_details["upi_id"]:
+                if not any(x in cleaned.lower() for x in ["support@", "info@", "help@", "youremail@", "domain.com", "10cric"]):
+                    upi_details["upi_id"] = cleaned
+            elif "NAME" in str(label).upper():
+                upi_details["upi_name"] = cleaned
+        except Exception:
+            continue
+
+    # Extract Bank Details
     bank_details = {}
-    crypto_details = {}
-
-    # Step 10: Extract UPI using Regex
-    upi_matches = UPI_REGEX.findall(html_content)
-    if upi_matches:
-        upi_id = upi_matches[0]
-
-    # Step 11: Extract Bank Details using text searches
     if "account number" in html_content.lower() or "ifsc" in html_content.lower():
-        # Example parsing of unstructured text (mockup logic)
-        bank_details = {
-            "bank_name": "Mock Bank",
-            "account_number": "1234567890",
-            "ifsc": "MOCK0001234"
-        }
+        bank_details = {"bank_holder_name": "", "bank_account_number": "", "bank_ifsc_code": "", "bank_name": ""}
+        ifsc_pattern = re.compile(r"[A-Z]{4}0[A-Z0-9]{6}")
+        acc_pattern = re.compile(r"\b\d{9,18}\b")
 
-    # Step 12: Extract Crypto Address using Regex
-    btc_matches = BTC_REGEX.findall(html_content)
-    eth_matches = ETH_ERC20_REGEX.findall(html_content)
-    if btc_matches:
-        crypto_details = {"network": "BTC", "address": btc_matches[0]}
-    elif eth_matches:
-        crypto_details = {"network": "ERC20/USDT", "address": eth_matches[0]}
+        ifsc_match = ifsc_pattern.search(plain_text)
+        if ifsc_match:
+            bank_details["bank_ifsc_code"] = ifsc_match.group(0)
+        acc_matches = acc_pattern.findall(plain_text)
+        for match in acc_matches:
+            if bank_details["bank_ifsc_code"] and match in bank_details["bank_ifsc_code"]:
+                continue
+            bank_details["bank_account_number"] = match
+            break
+
+        for field in soup.find_all(["span", "div", "td", "label", "p"]):
+            try:
+                text = field.get_text().strip()
+                if re.search(r"Beneficiary|Holder|Account Name", text, re.IGNORECASE):
+                    sibling = field.find_next_sibling()
+                    if sibling:
+                        bank_details["bank_holder_name"] = sibling.get_text().strip()
+                elif re.search(r"Bank Name", text, re.IGNORECASE):
+                    sibling = field.find_next_sibling()
+                    if sibling:
+                        bank_details["bank_name"] = sibling.get_text().strip()
+            except Exception:
+                continue
+
+    # Extract Crypto Details
+    crypto_details = {}
+    crypto_address_pattern = re.compile(r"\b(0x[a-fA-F0-9]{40}|[13][a-km-zA-HJ-NP-Z1-9]{26,33}|T[A-Za-z1-9]{33})\b")
+    crypto_match = crypto_address_pattern.search(plain_text)
+    if crypto_match:
+        crypto_details = {"network": "", "address": crypto_match.group(0)}
+        # Try to infer network
+        if crypto_match.group(0).startswith("0x"):
+            crypto_details["network"] = "ERC20/USDT"
+        elif crypto_match.group(0).startswith("T"):
+            crypto_details["network"] = "TRC20/USDT"
+        elif crypto_match.group(0).startswith(("1", "3", "bc1")):
+            crypto_details["network"] = "BTC"
+            
+    for label in soup.find_all(string=re.compile(r"Address|Network|Crypto Address", re.IGNORECASE)):
+        try:
+            val = label.find_next()
+            if val:
+                crypto_details["network_label"] = val.get_text().strip()
+        except Exception:
+            continue
 
     # Step 13: Take Screenshot
-    screenshot_path = f"screenshots/{method_name}.png"
-    await page_context.screenshot(path=screenshot_path)
+    screenshot_path = f"screenshots/{safe_method_name}_{timestamp}.png"
+    if hasattr(page_context, "screenshot"):
+        await page_context.screenshot(path=screenshot_path)
+    elif hasattr(page_context, "page") and page_context.page:
+        await page_context.page.screenshot(path=screenshot_path)
 
     # Step 14: Save JSON
     result = {
-        "site": "generic_platform",
+        "site": "10cric",
         "payment_method": method_name,
-        "upi_id": upi_id,
+        "upi_id": upi_details["upi_id"],
+        "upi_name": upi_details["upi_name"],
         "bank": bank_details,
         "crypto": crypto_details,
         "screenshot": screenshot_path,
         "scraped_at": datetime.now().isoformat()
     }
     
-    with open(f"json/{method_name}.json", "w", encoding="utf-8") as f:
+    json_path = f"json/{safe_method_name}_{timestamp}.json"
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=4)
         
-    print(f"[SUCCESS] Saved data for {method_name}")
+    print(f"[SUCCESS] Saved data for {method_name} to {json_path}")
+
+
+async def submit_deposit_amount_if_needed(page_context, amount="1000"):
+    """Enters the default amount and clicks proceed/deposit if the amount form is visible"""
+    print(f"[INFO] Checking for deposit amount form...")
+    try:
+        # Wait a bit for the card to expand / load inputs
+        await page_context.wait_for_timeout(2000)
+        
+        # 1. Look for amount input field
+        amount_input = None
+        amount_selectors = [
+            "input[type='number']",
+            "input[name*='amount' i]",
+            "input[id*='amount' i]",
+            "input[placeholder*='amount' i]",
+            "input[class*='amount' i]"
+        ]
+        
+        for selector in amount_selectors:
+            try:
+                locator = page_context.locator(selector)
+                count = await locator.count()
+                for i in range(count):
+                    el = locator.nth(i)
+                    if await el.is_visible() and await el.is_enabled():
+                        amount_input = el
+                        break
+                if amount_input:
+                    break
+            except Exception:
+                continue
+
+        if amount_input:
+            print(f"[INFO] Found amount input field. Clearing and typing '{amount}'...")
+            await amount_input.fill("")
+            await amount_input.fill(amount)
+            await page_context.wait_for_timeout(1000)
+        else:
+            # Check for preset amount buttons (e.g. 1000, 2000)
+            preset_buttons = page_context.locator("//button[contains(text(), '500') or contains(text(), '1000') or contains(text(), '2000') or contains(text(), '1,000')]")
+            count = await preset_buttons.count()
+            if count > 0:
+                for i in range(count):
+                    btn = preset_buttons.nth(i)
+                    if await btn.is_visible() and await btn.is_enabled():
+                        text = await btn.inner_text()
+                        print(f"[INFO] Found preset button '{text}'. Clicking it...")
+                        await btn.click()
+                        await page_context.wait_for_timeout(1000)
+                        break
+
+        # 2. Look for the submit/deposit/proceed button
+        submit_btn = None
+        button_locators = page_context.locator(
+            "button, input[type='button'], input[type='submit'], [role='button'], .btn, .button, .payment_modal_btn"
+        )
+        
+        keywords = ["deposit", "pay", "proceed", "confirm", "continue", "submit"]
+        count = await button_locators.count()
+        for idx in range(count):
+            btn = button_locators.nth(idx)
+            if await btn.is_visible() and await btn.is_enabled():
+                try:
+                    text = (await btn.inner_text() or await btn.get_attribute("value") or "").strip()
+                    if any(k in text.lower() for k in keywords):
+                        submit_btn = btn
+                        break
+                except Exception:
+                    continue
+
+        if submit_btn:
+            try:
+                text = (await submit_btn.inner_text() or await submit_btn.get_attribute("value") or "Submit").strip()
+            except Exception:
+                text = "Submit"
+            # Clean up text for logging
+            text = " ".join(text.split()[:5])
+            print(f"[INFO] Clicking submit button: '{text}'...")
+            await submit_btn.scroll_into_view_if_needed()
+            await page_context.wait_for_timeout(500)
+            await submit_btn.click(force=True)
+            await page_context.wait_for_timeout(5000) # Wait for gateway/iframe to load
+            return True
+        else:
+            print("[INFO] No deposit submit button found (might be direct or already on gateway).")
+            return False
+
+    except Exception as e:
+        print(f"[WARNING] Error checking/submitting deposit amount: {e}")
+        return False
 
 async def run_workflow():
     async with async_playwright() as p:
@@ -378,12 +566,12 @@ async def run_workflow():
         
         # Step 3: Open Add Funds Page
         print(f"[INFO] Navigating to Add Funds page: {FUNDS_URL}")
-        await page.goto(FUNDS_URL, wait_until="networkidle")
+        await page.goto(FUNDS_URL, wait_until="load")
         await page.wait_for_timeout(3000)
 
         if not await open_cashier(page):
             print("[WARNING] Cashier modal did not open from direct URL. Navigating to homepage and clicking deposit button.")
-            await page.goto("https://www.10cric247.com/", wait_until="networkidle")
+            await page.goto("https://www.10cric247.com/", wait_until="load")
             await page.wait_for_timeout(3000)
             success = await open_cashier(page)
             if not success:
@@ -409,7 +597,7 @@ async def run_workflow():
             print("[INFO] Saved debug page HTML and screenshot.")
             return
 
-        method_names = []
+        unique_method_names = []
         locator = page.locator(selector)
         for index in method_indices:
             try:
@@ -421,87 +609,74 @@ async def run_workflow():
                     name = (await locator.nth(index).inner_text()).splitlines()[0].strip()
                 except Exception:
                     name = None
-            if not name:
-                continue
-            method_names.append(name)
+            if name:
+                name = name.strip()
+                if name and name not in unique_method_names:
+                    unique_method_names.append(name)
 
-        print(f"[INFO] Detected payment methods: {method_names}")
+        print(f"[INFO] Detected unique payment methods: {unique_method_names}")
 
         # Step 5: Loop through methods and re-select the tile each time
-        for method_index, name in enumerate(method_names):
+        for method_index, name in enumerate(unique_method_names):
             print(f"[PROCESS] Activating method: {name} (index {method_index})")
 
             if not await ensure_cashier_open(page):
                 print(f"[WARNING] Could not reopen the cashier modal for method '{name}'. Stopping.")
                 break
 
-            selector, method_indices = await find_payment_method_elements(page)
-            if method_index >= len(method_indices):
-                print(f"[WARNING] Expected {method_index + 1} payment methods but found {len(method_indices)}. Stopping.")
-                break
+            element = await find_payment_method_by_name(page, name)
+            if not element:
+                print(f"[WARNING] Could not find payment method tile for '{name}'")
+                continue
 
-            locator = page.locator(selector).nth(method_indices[method_index])
-            try:
-                current_name = await locator.inner_text()
-            except Exception:
-                current_name = name
-            print(f"[DEBUG] Selected method tile label: {current_name}")
+            print(f"[DEBUG] Selected method tile label: {name}")
 
             clicked = False
             try:
-                await locator.scroll_into_view_if_needed()
-            except Exception:
-                pass
-
-            try:
-                await locator.click()
+                await element.scroll_into_view_if_needed()
+                await page.wait_for_timeout(500)
+                await element.click()
                 clicked = True
             except Exception:
                 pass
 
             if not clicked:
                 try:
-                    child = await locator.query_selector("button, a")
-                    if child:
-                        await child.click()
-                        clicked = True
-                except Exception:
-                    pass
-
-            if not clicked:
-                try:
-                    await locator.click(force=True)
+                    await element.click(force=True)
                     clicked = True
                 except Exception as e:
                     print(f"[WARNING] Failed to click element for method '{name}': {e}")
                     continue
 
-            await page.wait_for_timeout(4000) # Allow rendering
+            # Enter deposit amount and proceed
+            await submit_deposit_amount_if_needed(page)
 
             # Step 7: Check New page status (Same page, Tab, or Iframe)
+            await page.wait_for_timeout(4000) # Allow rendering
             frames = page.frames
-            # If the platform loads an external billing portal inside an iframe
             payment_frame = None
             for frame in frames:
-                if "payment" in frame.url or "checkout" in frame.url:
+                if frame == page.main_frame:
+                    continue
+                if any(x in frame.url.lower() for x in ["payment", "checkout", "paysystem", "deposit", "cashier", "wallet"]):
                     payment_frame = frame
                     break
             
             if payment_frame:
                 print(f"[INFO] Payment gateway detected inside iframe: {payment_frame.url}")
                 await extract_payment_data(payment_frame, name)
-
             else:
-                # Same page or popup window check
                 await extract_payment_data(page, name)
-
 
             # Step 15: Close Current Payment / Go back to list
             await close_cashier(page)
             await page.wait_for_timeout(2500)
 
             if not await wait_for_cashier_tiles(page):
-                await page.goto(FUNDS_URL, wait_until="networkidle")
+                try:
+                    await page.goto(FUNDS_URL, wait_until="load", timeout=15000)
+                except Exception as ne:
+                    print(f"[WARNING] Navigation to cashier URL failed: {ne}")
                 await page.wait_for_timeout(3000)
                 await open_cashier(page)
                 await page.wait_for_timeout(2500)
