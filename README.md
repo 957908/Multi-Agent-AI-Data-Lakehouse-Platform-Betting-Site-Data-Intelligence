@@ -7,11 +7,17 @@
 
 ---
 
-## ⚡ Live Console Links (Local Run)
-Once you boot up the services on your machine, you can access them via the following live URLs:
-* 🖥️ **React Dashboard Client**: [http://localhost:3000](http://localhost:3000)
-* ⚙️ **FastAPI Swagger API Documentation**: [http://localhost:8085/docs](http://localhost:8085/docs)
-* 📊 **Grafana Monitoring Dashboard**: [http://localhost:3001](http://localhost:3001)
+## ⚡ Local Live Console Registry
+
+Once you spin up the services using the runner script or Docker compose, access the running modules locally using the registry below:
+
+| Component / Service | Port | Endpoint Link | Dev Status Badge |
+| :--- | :---: | :--- | :--- |
+| **Vite React UI Console** | `3000` | [http://localhost:3000](http://localhost:3000) | ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB) |
+| **FastAPI REST Backend** | `8085` | [http://localhost:8085/docs](http://localhost:8085/docs) | ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi) |
+| **Grafana Metrics Analytics** | `3001` | [http://localhost:3001](http://localhost:3001) | ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white) |
+| **Kafdrop Event Viewer** | `9000` | [http://localhost:9000](http://localhost:9000) | ![Kafka](https://img.shields.io/badge/Kafka_Kafdrop-231F20?style=flat-square&logo=apache-kafka&logoColor=white) |
+| **MinIO Storage Dashboard** | `9001` | [http://localhost:9001](http://localhost:9001) | ![MinIO](https://img.shields.io/badge/MinIO_S3-C92847?style=flat-square&logo=minio&logoColor=white) |
 
 ---
 
