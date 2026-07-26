@@ -16,10 +16,10 @@ import time
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 BACKEND_DIR = os.path.join(ROOT_DIR, "backend")
-STORAGE_DIR = os.path.join(ROOT_DIR, "storage")
-ML_DIR = os.path.join(ROOT_DIR, "ml_models")
-RAG_DIR = os.path.join(ROOT_DIR, "rag_service")
-AGENTS_DIR = os.path.join(ROOT_DIR, "agents")
+STORAGE_DIR = os.path.join(ROOT_DIR, "data_pipelines", "spark")
+ML_DIR = os.path.join(ROOT_DIR, "ai_services", "ml_models")
+RAG_DIR = os.path.join(ROOT_DIR, "ai_services", "RAG")
+AGENTS_DIR = os.path.join(ROOT_DIR, "ai_services", "agents")
 FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
 
 def print_header(title):

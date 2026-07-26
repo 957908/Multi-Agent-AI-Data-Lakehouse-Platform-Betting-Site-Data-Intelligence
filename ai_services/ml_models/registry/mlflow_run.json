@@ -1,7 +1,7 @@
 {
     "experiment_name": "Betting_Data_Intelligence_MLOps",
-    "run_id": "672256",
-    "timestamp": "2026-07-19T16:59:18.176102",
+    "run_id": "359302",
+    "timestamp": "2026-07-26T21:17:57.311519",
     "metrics": {
         "random_forest_estimators": 100,
         "isolation_forest_contamination": 0.03,

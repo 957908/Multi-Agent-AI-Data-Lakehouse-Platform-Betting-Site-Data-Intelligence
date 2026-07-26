@@ -25,15 +25,11 @@ Access the running modules on your web environment or spin them up locally:
 
 The repository has been refactored into modular cleanliness:
 
+* **`scrapers/`**: Consolidated payment cashier crawlers. Includes `selenium/` standalone cashier scripts (1xBet, 10Cric, 22Bet) and the `scrapy/` crawler engine (Cric10, Melbet, Stake, Mostbet, Parimatch, Bet22).
+* **`data_pipelines/`**: Unified ingestion and medallion ETL layers. Contains `kafka/` brokers (consumers, producers with DLQ), `flink/` stream processors (tumbling windows), and `spark/` Iceberg ETL jobs.
+* **`ai_services/`**: AI and machine learning layers. Contains `ml_models/` classification and anomaly pipelines, `RAG/` semantic FAISS vector retrieval indexing, and `agents/` CrewAI orchestration loops.
 * **`frontend/`**: React + TypeScript + Vite dashboard using Tailwind CSS and Recharts. Runs on port `3000`.
 * **`backend/`**: FastAPI REST API following Repository Pattern, mapping models/schemas and supporting JWT session authentication. Runs on port `8085`.
-* **`data_collection/`**: Centralized **Scrapy** project integrating **Playwright** browser middleware for SPA rendering, proxy rotation, and user-agent spoofing.
-* **`streaming/`**: Kafka producer and consumer scripts handling raw payloads with DLQ routing.
-* **`stream_processing/`**: Apache Flink consumer simulation performing cleaning and tumbling window metrics.
-* **`storage/`**: PySpark batch ETL job configuring Nessie catalog and saving Iceberg tables on MinIO S3 bucket replica.
-* **`ml_models/`**: scikit-learn pipeline scripts training Random Forest, Isolation Forest, K-Means models and registering them to mock MLflow tracking.
-* **`rag_service/`**: FAISS index builder utilizing `sentence-transformers` and LangChain query routers.
-* **`agents/`**: Cooperative crew simulation mapping worker actings (Scraper, Validator, Anomaly, Reporter).
 * **`monitoring/`**: Prometheus config scraping backend diagnostic metrics and routing to Grafana (port `3001`).
 
 ---

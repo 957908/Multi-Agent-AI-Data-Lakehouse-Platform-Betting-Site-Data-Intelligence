@@ -16,8 +16,8 @@ from backend.app.repositories.transaction import transaction_repository
 from backend.app.schemas import schemas
 
 # RAG & Agent Modules integration
-from rag_service.lakehouse_rag import SemanticRAGPipeline
-from agents.lakehouse_agents import run_agent_orchestration
+from ai_services.RAG.lakehouse_rag import SemanticRAGPipeline
+from ai_services.agents.lakehouse_agents import run_agent_orchestration
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -132,7 +132,7 @@ def query_rag(payload: schemas.RAGQueryRequest):
 
 @router.post("/predict-anomaly", response_model=schemas.AnomalyPredictResponse)
 def predict_anomaly(payload: schemas.AnomalyPredictRequest):
-    model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ml_models", "registry", "anomaly_detector.joblib")
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ai_services", "ml_models", "registry", "anomaly_detector.joblib")
     if not os.path.exists(model_path):
         raise HTTPException(status_code=404, detail="Model binary 'anomaly_detector.joblib' not found. Execute training pipeline first.")
         
@@ -175,7 +175,7 @@ def run_agents(background_tasks: BackgroundTasks):
 
 @router.get("/model-diagnostics")
 def get_diagnostics():
-    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ml_models", "registry")
+    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ai_services", "ml_models", "registry")
     response = {
         "classifier": {"status": "missing"},
         "anomaly_detector": {"status": "missing"},

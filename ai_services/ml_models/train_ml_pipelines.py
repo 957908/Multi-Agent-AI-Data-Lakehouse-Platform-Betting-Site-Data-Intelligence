@@ -17,7 +17,7 @@ ML_DIR = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_DIR = os.path.join(ML_DIR, "registry")
 os.makedirs(REGISTRY_DIR, exist_ok=True)
 
-BACKEND_DB = os.path.join(os.path.dirname(ML_DIR), "backend", "app", "betting_lakehouse.db")
+BACKEND_DB = os.path.join(os.path.dirname(os.path.dirname(ML_DIR)), "backend", "app", "betting_lakehouse.db")
 
 def load_ml_dataset():
     """Loads transaction records from the Lakehouse database to compile feature arrays."""

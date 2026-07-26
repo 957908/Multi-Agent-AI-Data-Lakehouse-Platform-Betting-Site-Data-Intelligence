@@ -16,7 +16,7 @@ os.makedirs(INDEX_DIR, exist_ok=True)
 INDEX_PATH = os.path.join(INDEX_DIR, "faiss_index.index")
 METADATA_PATH = os.path.join(INDEX_DIR, "metadata.csv")
 
-BACKEND_DB = os.path.join(os.path.dirname(RAG_DIR), "backend", "app", "betting_lakehouse.db")
+BACKEND_DB = os.path.join(os.path.dirname(os.path.dirname(RAG_DIR)), "backend", "app", "betting_lakehouse.db")
 
 class MockEncoder:
     """

@@ -8,7 +8,7 @@ from datetime import datetime
 # Setup directory references
 STORAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 BRONZE_DIR = os.path.join(STORAGE_DIR, "bronze")
-BACKEND_DB = os.path.join(os.path.dirname(STORAGE_DIR), "backend", "app", "betting_lakehouse.db")
+BACKEND_DB = os.path.join(os.path.dirname(os.path.dirname(STORAGE_DIR)), "backend", "app", "betting_lakehouse.db")
 
 def run_spark_lakehouse_etl():
     """Initializes Spark Session with Iceberg / Nessie jars and writes partitioned Iceberg tables."""
