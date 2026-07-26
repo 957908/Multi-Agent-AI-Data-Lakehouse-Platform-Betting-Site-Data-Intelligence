@@ -34,7 +34,7 @@ load_dotenv()
 try:
     from config import BASE_URL
 except ImportError:
-    BASE_URL = os.getenv("BASE_URL", "https://indi.1xbet.com")
+    BASE_URL = os.getenv("BASE_URL", "https://1xbet.com")
 
 
 class SimplifiedPaymentScraper:

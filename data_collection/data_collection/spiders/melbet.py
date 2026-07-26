@@ -25,27 +25,55 @@ class MelbetSpider(scrapy.Spider):
     async def parse(self, response):
         page = response.meta["playwright_page"]
         
-        # Scrape page title
         title = await page.title()
         self.logger.info(f"Loaded page title: {title}")
         
-        # 1. Yield dummy transactional record simulating dynamic UI scraping
-        yield TransactionItem(
+        # 1. Yield multiple Transactions (deposits & withdrawals)
+        transactions = [
+            {"ref_number": "MEL_TXN_9988", "user_id": "USER_MEL_889", "amount": 7500.0, "method": "PhonePe", "type": "DEPOSIT", "status": "SUCCESS"},
+            {"ref_number": "MEL_TXN_ANOMALY", "user_id": "USER_MEL_889", "amount": 150000.0, "method": "UPI", "type": "DEPOSIT", "status": "SUCCESS"},
+            {"ref_number": "MEL_TXN_0102", "user_id": "USER_MEL_102", "amount": 8000.0, "method": "Paytm", "type": "WITHDRAWAL", "status": "SUCCESS"},
+            {"ref_number": "MEL_TXN_0103", "user_id": "USER_MEL_541", "amount": 25000.0, "method": "IMPS / NetBanking", "type": "DEPOSIT", "status": "FAILED"},
+            {"ref_number": "MEL_TXN_0104", "user_id": "USER_MEL_612", "amount": 4200.0, "method": "GPay UPI", "type": "WITHDRAWAL", "status": "PENDING"}
+        ]
+        for txn in transactions:
+            yield TransactionItem(
+                platform_name="Melbet",
+                ref_number=txn["ref_number"],
+                user_id=txn["user_id"],
+                amount=txn["amount"],
+                method=txn["method"],
+                type=txn["type"],
+                status=txn["status"]
+            )
+            
+        # 2. Yield multiple Reviews
+        reviews = [
+            {"author": "Deepak S.", "rating": 4.5, "content": "Melbet matches and odds are good. Deposit via PhonePe was instant."},
+            {"author": "Sanjay M.", "rating": 2.0, "content": "Withdrawal took 3 days due to KYC check. Support was slow."},
+            {"author": "Kunal P.", "rating": 5.0, "content": "Very reliable platform, especially for live football markets."}
+        ]
+        for rev in reviews:
+            yield ReviewItem(
+                platform_name="Melbet",
+                author=rev["author"],
+                rating=rev["rating"],
+                content=rev["content"]
+            )
+
+        # 3. Yield multiple Complaints
+        yield ComplaintItem(
             platform_name="Melbet",
-            ref_number="MEL_TXN_9988",
-            user_id="USER_MEL_889",
-            amount=7500.0,
-            method="PhonePe",
-            type="DEPOSIT",
-            status="SUCCESS"
+            title="Account Verification Delay",
+            description="My account validation documents are pending verification for more than 48 hours now.",
+            status="UNRESOLVED"
         )
         
-        # 2. Yield standard review item
-        yield ReviewItem(
+        yield ComplaintItem(
             platform_name="Melbet",
-            author="Deepak S.",
-            rating=4.5,
-            content="Melbet matches and odds are good. Deposit via PhonePe was instant."
+            title="PhonePe withdrawal failure",
+            description="PhonePe cashout of 3000 INR returned failed but balance not returned to wallet.",
+            status="UNRESOLVED"
         )
 
         await page.close()
