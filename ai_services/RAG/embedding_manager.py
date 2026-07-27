@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-from sentence_transformers import SentenceTransformer
+# sentence_transformers import moved inside __init__ to prevent top-level import MemoryErrors
 from sqlalchemy import create_engine, text
 
 # Setup paths
@@ -39,9 +39,10 @@ class EmbeddingManager:
     """
     def __init__(self):
         try:
+            from sentence_transformers import SentenceTransformer
             self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
             logger.info("SentenceTransformer loaded: all-MiniLM-L6-v2")
-        except Exception as e:
+        except (Exception, BaseException) as e:
             logger.warning(f"Failed to load SentenceTransformer: {e}. Falling back to MockEncoder.")
             self.encoder = MockEncoder()
 
