@@ -17,13 +17,14 @@ from backend.app.schemas import schemas
 
 # RAG & Agent Modules integration
 from ai_services.RAG.lakehouse_rag import SemanticRAGPipeline
-from ai_services.agents.lakehouse_agents import run_agent_orchestration
+from ai_services.agents.lakehouse_agents import CoordinatorAgent
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 # Load models and RAG pipeline
 rag_pipeline = SemanticRAGPipeline()
+coordinator = CoordinatorAgent()
 
 # Core Dependency to check JWT and return Current User
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
@@ -156,18 +157,65 @@ def predict_anomaly(payload: schemas.AnomalyPredictRequest):
         raise HTTPException(status_code=500, detail=f"ML Inference error: {e}")
 
 # ============================================================
-# ASYNC AGENT RUNNER CONTROL
+# ASYNC AGENT RUNNER CONTROL & STATS
 # ============================================================
 
-def trigger_agent_run_sync():
-    import asyncio
-    asyncio.run(run_agent_orchestration())
+async def run_coordinator_workflow_bg():
+    await coordinator.execute_workflow()
 
 @router.post("/agents/run")
 def run_agents(background_tasks: BackgroundTasks):
-    """Triggers the async Multi-Agent Actor Crew in a separate background thread."""
-    background_tasks.add_task(trigger_agent_run_sync)
-    return {"status": "triggered", "message": "Multi-agent simulation started in background."}
+    """Triggers the async Multi-Agent Coordinator workflow queue in a background task."""
+    if coordinator.status == "RUNNING":
+        return {"status": "already_running", "message": "Multi-agent workflow is already actively executing."}
+    
+    background_tasks.add_task(run_coordinator_workflow_bg)
+    return {"status": "triggered", "message": "Multi-agent workflow started in background."}
+
+@router.get("/agents/status")
+def get_agents_status():
+    """Returns the current execution state and logs of the Coordinator agent."""
+    return {
+        "status": coordinator.status,
+        "logs": coordinator.logs
+    }
+
+@router.get("/rag/health")
+def get_rag_health():
+    """Checks the health of the FAISS index and the underlying encoder."""
+    is_healthy = False
+    details = "FAISS index empty or uninitialized."
+    if rag_pipeline.vector_store.index and rag_pipeline.vector_store.index.ntotal > 0:
+        is_healthy = True
+        details = "FAISS index loaded and active."
+        
+    return {
+        "healthy": is_healthy,
+        "details": details,
+        "encoder": rag_pipeline.embedding_manager.encoder.__class__.__name__
+    }
+
+@router.get("/vector/index")
+def get_vector_index():
+    """Returns the current metadata indexed inside the FAISS vector store."""
+    return {
+        "total_records": len(rag_pipeline.vector_store.metadata),
+        "metadata": rag_pipeline.vector_store.metadata
+    }
+
+@router.get("/vector/stats")
+def get_vector_stats():
+    """Returns statistics of the FAISS index."""
+    ntotal = 0
+    dimension = 384
+    if rag_pipeline.vector_store.index:
+        ntotal = rag_pipeline.vector_store.index.ntotal
+        dimension = rag_pipeline.vector_store.index.d
+    return {
+        "total_vectors": ntotal,
+        "dimension": dimension,
+        "index_type": "IndexFlatL2"
+    }
 
 # ============================================================
 # MODEL DIAGNOSTICS ENDPOINT

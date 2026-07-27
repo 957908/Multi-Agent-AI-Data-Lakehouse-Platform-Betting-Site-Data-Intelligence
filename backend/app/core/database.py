@@ -10,7 +10,12 @@ DATABASE_URL = os.getenv(
 
 try:
     print(f"[DB] Attempting connection to PostgreSQL: {DATABASE_URL}...")
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = create_engine(
+        DATABASE_URL, 
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20
+    )
     # Test connection
     with engine.connect() as conn:
         pass

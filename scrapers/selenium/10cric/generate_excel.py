@@ -3,8 +3,9 @@ import json
 import pandas as pd
 from datetime import datetime
 
-json_path = r"C:\Users\kadam\Desktop\scraper\10cric\json"
-excel_output_path = r"C:\Users\kadam\Desktop\scraper\10cric\10cric_Scraper_Report.xlsx"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(script_dir, "json")
+excel_output_path = os.path.join(script_dir, "10cric_Scraper_Report.xlsx")
 
 print("Compiling scraper JSON outputs into a professional Excel report...")
 

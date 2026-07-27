@@ -92,6 +92,8 @@ services:
     volumes:
       - ./monitoring/prometheus:/etc/prometheus
       - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -108,6 +110,37 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+
+  # ----------------------------------------------------
+  # App: Unified FastAPI Backend & React Frontend
+  # ----------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lakehouse-app
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/betting_lakehouse
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - MINIO_ENDPOINT=minio:9000
+      - NESSIE_URI=http://nessie:19120/api/v1
+      - LLM_PROVIDER=ollama
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    depends_on:
+      - db
+      - kafka
+      - minio
+      - nessie
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:

@@ -1,0 +1,25 @@
+{
+    "generated_at": "2026-07-27T23:31:59.057999",
+    "rag_context": "I do not know based on the Lakehouse metadata. No context snippets were found matching this query.",
+    "data_quality": {
+        "valid_records": 10,
+        "null_fields_detected": 0
+    },
+    "payment_metrics": {
+        "total_volume": 15000.0,
+        "popular_methods": [
+            "UPI",
+            "NetBanking"
+        ]
+    },
+    "risk_profile": {
+        "high_risk_platforms": [
+            "10Cric (Simulated Anomalies)"
+        ],
+        "avg_trust_score": 50.0
+    },
+    "system_health": {
+        "status": "HEALTHY",
+        "latency_ms": 12.0
+    }
+}

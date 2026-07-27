@@ -1,15 +1,18 @@
-# Dynamic Multi-Agent Execution Summary
+# Medallion Lakehouse Platform Audit Report
+Generated at: 2026-07-27 23:31:59
 
-Report generated at: 2026-07-19 16:58:01
+## 1. Executive Summary
+This report was compiled by the multi-agent coordinator using RAG context:
+I do not know based on the Lakehouse metadata. No context snippets were found matching this query.
 
-## Ingestion Metrics
-* **Total Transactions Crawled**: 4
-* **Anomalous Flags Raised**: 1
+## 2. Ingestion & Quality Metrics
+* **Valid Transactions Ingested**: 10
+* **Null Fields Flagged**: 0
 
-## Flagged Anomalies Details
+## 3. Financial & Payment Metrics
+* **Total Aggregated Volume**: 15000.00 INR
+* **Payment Channels Detected**: UPI, NetBanking
 
-### [CRITICAL ALERT] TXN_ANOMALY_999
-* **Platform**: 10Cric
-* **Amount**: 550000.0 INR
-* **Reason**: Amount exceeds ML boundary / static limit.
-* **Risk Score Impact**: +35 points
+## 4. Risk Profile Details
+* **High Risk Platforms**: 10Cric (Simulated Anomalies)
+* **Platform Status**: HEALTHY

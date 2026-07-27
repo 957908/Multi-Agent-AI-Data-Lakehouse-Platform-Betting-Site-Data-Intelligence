@@ -1,6 +1,6 @@
 import scrapy
 from scrapy_playwright.page import PageMethod
-from data_collection.data_collection.items import ReviewItem, ComplaintItem, TransactionItem
+from data_collection.items import ReviewItem, ComplaintItem, TransactionItem
 
 class Cric10Spider(scrapy.Spider):
     name = "cric10"

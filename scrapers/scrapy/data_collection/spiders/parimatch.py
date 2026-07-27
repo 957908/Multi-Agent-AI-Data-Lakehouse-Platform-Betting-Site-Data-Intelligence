@@ -1,6 +1,6 @@
 import scrapy
 from scrapy_playwright.page import PageMethod
-from data_collection.data_collection.items import ReviewItem, TransactionItem
+from data_collection.items import ReviewItem, TransactionItem, ComplaintItem
 
 class ParimatchSpider(scrapy.Spider):
     name = "parimatch"

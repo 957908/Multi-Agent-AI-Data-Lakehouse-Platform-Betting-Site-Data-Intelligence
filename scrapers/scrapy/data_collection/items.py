@@ -12,12 +12,14 @@ class ReviewItem(scrapy.Item):
     author = scrapy.Field()
     rating = scrapy.Field()
     content = scrapy.Field()
+    _pushed_to_kafka = scrapy.Field()
 
 class ComplaintItem(scrapy.Item):
     platform_name = scrapy.Field()
     title = scrapy.Field()
     description = scrapy.Field()
     status = scrapy.Field()
+    _pushed_to_kafka = scrapy.Field()
 
 class NewsItem(scrapy.Item):
     platform_name = scrapy.Field()
@@ -34,3 +36,4 @@ class TransactionItem(scrapy.Item):
     method = scrapy.Field()
     type = scrapy.Field() # DEPOSIT, WITHDRAWAL
     status = scrapy.Field() # SUCCESS, FAILED, PENDING
+    _pushed_to_kafka = scrapy.Field()

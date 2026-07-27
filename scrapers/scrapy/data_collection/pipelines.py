@@ -1,9 +1,45 @@
 import json
 import os
+import sys
+import logging
 from datetime import datetime
+
+# Setup path to import from project root dynamically on boot
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+from scrapy.exceptions import DropItem
 from sqlalchemy.orm import Session
 from backend.app.core.database import SessionLocal
 from backend.app.models.models import Platform, Review, Complaint, NewsItem, PaymentMethod, Transaction
+
+class DataValidationPipeline:
+    """
+    Validates transactional item schemas before allowing downstream pipelines to run.
+    """
+    def process_item(self, item, spider):
+        item_class = item.__class__.__name__
+        if item_class == "TransactionItem":
+            ref_number = item.get("ref_number")
+            platform_name = item.get("platform_name")
+            amount = item.get("amount")
+            
+            if not ref_number or not platform_name or amount is None:
+                spider.logger.error(f"[VALIDATION FAILED] TransactionItem dropped. Missing required fields in item: {dict(item)}")
+                raise DropItem(f"Missing required fields: ref_number={ref_number}, platform_name={platform_name}, amount={amount}")
+            
+            try:
+                amount_val = float(amount)
+                if amount_val <= 0:
+                    spider.logger.error(f"[VALIDATION FAILED] TransactionItem dropped. Amount must be positive: {amount}")
+                    raise DropItem(f"Amount must be positive: {amount}")
+            except ValueError:
+                spider.logger.error(f"[VALIDATION FAILED] TransactionItem dropped. Amount not a number: {amount}")
+                raise DropItem(f"Amount not a number: {amount}")
+                
+        return item
 
 class JsonExportPipeline:
     def open_spider(self, spider):
@@ -28,6 +64,62 @@ class JsonExportPipeline:
         self.file.write(line)
         return item
 
+class KafkaPublisherPipeline:
+    """
+    Publishes validated transaction items to raw Kafka topics using SharedKafkaProducer.
+    Falls back gracefully if Kafka broker is unavailable.
+    """
+    def open_spider(self, spider):
+        self.producer = None
+        try:
+            from data_pipelines.kafka.kafka_producer import SharedKafkaProducer
+            self.producer = SharedKafkaProducer()
+            spider.log(f"[KAFKA] Initialized SharedKafkaProducer. Enabled: {self.producer.enabled}")
+        except Exception as e:
+            spider.log(f"[KAFKA ERROR] Failed to initialize SharedKafkaProducer: {e}", level=logging.ERROR)
+
+    def close_spider(self, spider):
+        if self.producer:
+            try:
+                self.producer.close()
+                spider.log("[KAFKA] Closed SharedKafkaProducer connection.")
+            except Exception as e:
+                spider.log(f"[KAFKA ERROR] Failed to close Kafka producer: {e}", level=logging.ERROR)
+
+    def process_item(self, item, spider):
+        item_class = item.__class__.__name__
+        
+        # Determine topic mapping based on spider name
+        spider_name = spider.name
+        if spider_name == "cric10":
+            topic = "10cric-raw-data"
+        elif spider_name == "bet22":
+            topic = "22bet-raw-data"
+        else:
+            topic = f"{spider_name}-raw-data"
+            
+        payload = dict(item)
+        
+        # Ensure timestamp is set in payload
+        if "timestamp" not in payload:
+            payload["timestamp"] = datetime.now().isoformat()
+
+        success = False
+        if self.producer and self.producer.enabled:
+            try:
+                success = self.producer.publish_event(topic, payload)
+                if success:
+                    spider.log(f"[KAFKA SUCCESS] Published item. Spider: {spider_name}, Topic: {topic}, Platform: {payload.get('platform_name')}, Ref: {payload.get('ref_number')}, Success: True, Retries: 0")
+                    item["_pushed_to_kafka"] = True
+                else:
+                    spider.log(f"[KAFKA FAILURE] Producer publish failed. Spider: {spider_name}, Topic: {topic}, Platform: {payload.get('platform_name')}, Ref: {payload.get('ref_number')}, Success: False, Retries: 0", level=logging.WARNING)
+            except Exception as e:
+                spider.log(f"[KAFKA ERROR] Failed to publish event: {e}. Spider: {spider_name}, Topic: {topic}, Platform: {payload.get('platform_name')}, Ref: {payload.get('ref_number')}, Success: False, Retries: 0", level=logging.WARNING)
+        else:
+            spider.log(f"[KAFKA OFFLINE] Kafka producer unavailable. Falling back to DB write. Spider: {spider_name}, Topic: {topic}, Platform: {payload.get('platform_name')}, Ref: {payload.get('ref_number')}", level=logging.WARNING)
+            
+        return item
+
 class PostgresExportPipeline:
     def open_spider(self, spider):
         self.db: Session = None
@@ -44,6 +136,11 @@ class PostgresExportPipeline:
 
     def process_item(self, item, spider):
         if not self.db:
+            return item
+
+        # Fallback check: if item was successfully published to Kafka, skip DB write here
+        if item.get("_pushed_to_kafka"):
+            spider.log(f"[FALLBACK SYSTEM] Item {item.get('ref_number', '')} already published to Kafka. Skipping direct Postgres insert.")
             return item
 
         try:

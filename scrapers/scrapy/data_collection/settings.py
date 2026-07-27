@@ -40,8 +40,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 ITEM_PIPELINES = {
-    "data_collection.pipelines.PostgresExportPipeline": 300,
-    "data_collection.pipelines.JsonExportPipeline": 400,
+    "data_collection.pipelines.DataValidationPipeline": 100,
+    "data_collection.pipelines.JsonExportPipeline": 200,
+    "data_collection.pipelines.KafkaPublisherPipeline": 300,
+    "data_collection.pipelines.PostgresExportPipeline": 400,
 }
 
 # Configure Playwright Browser settings

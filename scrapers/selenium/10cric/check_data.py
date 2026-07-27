@@ -6,7 +6,8 @@ import sys
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-path = r"C:\Users\kadam\Desktop\scraper\10cric\json"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+path = os.path.join(script_dir, "json")
 print("Verifying collected data from JSON files:\n" + "=" * 60)
 
 for f in os.listdir(path):
