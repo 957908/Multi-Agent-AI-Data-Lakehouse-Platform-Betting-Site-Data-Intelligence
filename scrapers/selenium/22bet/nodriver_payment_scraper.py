@@ -158,7 +158,7 @@ class NodriverPaymentScraper:
             }}
 
             const fallback = root.getAttribute("title") || root.innerText || root.textContent;
-            return fallback && fallback.trim() ? fallback.trim().slice(0, 150) : "Unknown";
+            return fallback && fallback.trim() ? fallback.trim().slice(1, 150) : "Unknown";
         }})()
         """)
         return result or "Unknown"
@@ -175,7 +175,7 @@ class NodriverPaymentScraper:
                 return true;
             }})()
             """)
-            await asyncio.sleep(4)
+            await asyncio.sleep(5)
             return bool(result)
         except Exception as e:
             print("Payment click error:", e)
