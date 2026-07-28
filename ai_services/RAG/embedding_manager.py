@@ -10,7 +10,7 @@ project_root = os.path.dirname(os.path.dirname(RAG_DIR))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from backend.app.core.database import DATABASE_URL
+from backend.app.core.database import engine
 
 logger = logging.getLogger("EmbeddingManager")
 
@@ -53,8 +53,6 @@ class EmbeddingManager:
         return self.encoder.encode(texts_list)
 
     def load_latest_database_records(self):
-        """Pulls recent transactions and risk metrics for embedding creation."""
-        engine = create_engine(DATABASE_URL)
         records = []
         
         try:
