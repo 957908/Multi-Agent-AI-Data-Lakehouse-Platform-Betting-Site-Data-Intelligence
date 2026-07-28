@@ -16,7 +16,7 @@ project_root = os.path.dirname(os.path.dirname(STORAGE_DIR))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from backend.app.core.database import DATABASE_URL
+from backend.app.core.database import engine
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,9 +78,8 @@ def execute_relational_upsert(df_pandas, table_name, conflict_col):
     Saves Pandas dataframe to the relational database using an UPSERT pattern.
     Handles PostgreSQL conflict updates and SQLite replace statements.
     """
-    engine = create_engine(DATABASE_URL)
     try:
-        if "sqlite" in DATABASE_URL:
+        if "sqlite" in str(engine.url):
             # SQLite: use INSERT OR REPLACE
             with engine.begin() as conn:
                 columns = ", ".join(df_pandas.columns)
@@ -242,8 +241,7 @@ def run_pandas_fallback_etl():
     when SparkSession cannot initialize.
     """
     os.makedirs(os.path.dirname(BACKEND_DB), exist_ok=True)
-    engine = create_engine(DATABASE_URL)
-    
+
     # DDL initialization
     with engine.begin() as conn:
         conn.execute(text("""
