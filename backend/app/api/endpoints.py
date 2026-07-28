@@ -180,6 +180,18 @@ def get_agents_status():
         "logs": coordinator.logs
     }
 
+async def approve_coordinator_workflow_bg():
+    await coordinator.approve_workflow()
+
+@router.post("/agents/approve")
+def approve_agents(background_tasks: BackgroundTasks):
+    """Approves the pending multi-agent report draft and resumes the workflow."""
+    if coordinator.status != "AWAITING_REVIEW":
+        return {"status": "error", "message": "No workflow is currently pending approval."}
+    background_tasks.add_task(approve_coordinator_workflow_bg)
+    return {"status": "triggered", "message": "Report approval received. Workflow resuming."}
+
+
 @router.get("/rag/health")
 def get_rag_health():
     """Checks the health of the FAISS index and the underlying encoder."""

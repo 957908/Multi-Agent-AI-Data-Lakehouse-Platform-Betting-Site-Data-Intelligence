@@ -50,6 +50,11 @@ export const apiService = {
     return res.data;
   },
 
+  async approveAgents() {
+    const res = await axios.post(`${API_URL}/agents/approve`);
+    return res.data;
+  },
+
   async getRAGHealth() {
     const res = await axios.get(`${API_URL}/rag/health`);
     return res.data;
