@@ -184,7 +184,7 @@ export default function AgentConsole() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* LEFT & CENTER: Node Workflow and Cards */}
       <div className="lg:col-span-2 flex flex-col gap-6">
         {/* Status Header */}
@@ -308,7 +308,7 @@ export default function AgentConsole() {
       </div>
 
       {/* RIGHT: Live Logs Terminal and Human Gate */}
-      <div className="flex flex-col gap-6 h-full">
+      <div className="flex flex-col gap-6">
         {/* Human-in-the-loop Guardrail Gate */}
         {status === 'AWAITING_REVIEW' && (
           <div className="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 animate-fade-in shadow-[0_0_30px_rgba(245,158,11,0.08)] flex flex-col gap-4">
@@ -353,7 +353,7 @@ export default function AgentConsole() {
         )}
 
         {/* Live Terminal Terminal */}
-        <div className="glass-panel p-5 rounded-2xl flex-1 flex flex-col min-h-[350px] border border-white/5 bg-black/30">
+        <div className="glass-panel p-5 rounded-2xl flex flex-col border border-white/5 bg-black/30">
           <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4">
             <div className="flex items-center gap-2">
               <TerminalIcon className="w-4 h-4 text-purple-accent" />
@@ -365,7 +365,7 @@ export default function AgentConsole() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto font-mono text-[10px] leading-relaxed text-slate-300 flex flex-col gap-2 p-3 bg-black/60 rounded-xl border border-white/5 scrollbar-thin">
+          <div className="h-[400px] overflow-y-auto font-mono text-[10px] leading-relaxed text-slate-300 flex flex-col gap-2 p-3 bg-black/60 rounded-xl border border-white/5 scrollbar-thin">
             {logs.map((log, idx) => {
               let color = 'text-slate-400';
               if (log.includes('[LANGGRAPH]')) color = 'text-cyan-400';

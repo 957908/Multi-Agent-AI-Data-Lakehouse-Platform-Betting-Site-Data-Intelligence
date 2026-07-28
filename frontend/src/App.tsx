@@ -28,9 +28,11 @@ import StreamingStatus from './components/StreamingStatus';
 import RAGChat from './components/RAGChat';
 import AgentConsole from './components/AgentConsole';
 import KnowledgeGraph from './components/KnowledgeGraph';
+import HomePage from './components/HomePage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'knowledge' | 'scrapers' | 'ml' | 'rag' | 'agents'>('dashboard');
+  const [showHome, setShowHome] = useState<boolean>(true);
   
   // Dashboard states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -132,6 +134,14 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      {showHome ? (
+        <HomePage
+          onEnterConsole={(tab) => {
+            if (tab) setActiveTab(tab);
+            setShowHome(false);
+          }}
+        />
+      ) : (
       <div className="min-h-screen bg-[#0e1116] text-white flex flex-col font-jakarta relative overflow-hidden">
         {/* Background glow assets */}
         <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-purple-accent/5 rounded-full blur-[120px] pointer-events-none" />
@@ -140,9 +150,12 @@ export default function App() {
         {/* TOP HEADER NAVIGATION BAR */}
         <header className="w-full border-b border-white/5 bg-slate-900/30 backdrop-blur z-20">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500">
+            {/* Logo — click to go back home */}
+            <div
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => setShowHome(true)}
+            >
+              <div className="relative w-9 h-9 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:border-red-500/50 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
@@ -153,8 +166,8 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <h2 className="font-bold text-base font-outfit text-white tracking-wide">Bet Metrics Lab</h2>
-                <span className="text-[9px] text-gray-400 block -mt-1 font-mono">Data Lakehouse Platform</span>
+                <h2 className="font-bold text-base font-outfit text-white tracking-wide group-hover:text-red-300 transition-colors">Bet Metrics Lab</h2>
+                <span className="text-[9px] text-gray-400 block -mt-1 font-mono group-hover:text-slate-300 transition-colors">← Back to Home</span>
               </div>
             </div>
 
@@ -475,6 +488,7 @@ export default function App() {
 
         </main>
       </div>
+      )}
     </ErrorBoundary>
   );
 }
