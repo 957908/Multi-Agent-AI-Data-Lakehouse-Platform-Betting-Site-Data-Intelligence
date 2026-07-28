@@ -27,11 +27,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import StreamingStatus from './components/StreamingStatus';
 import RAGChat from './components/RAGChat';
 import AgentConsole from './components/AgentConsole';
-import LandingPage from './components/LandingPage';
+import KnowledgeGraph from './components/KnowledgeGraph';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'scrapers' | 'ml' | 'rag' | 'agents'>('dashboard');
-  const [showLanding, setShowLanding] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'knowledge' | 'scrapers' | 'ml' | 'rag' | 'agents'>('dashboard');
   
   // Dashboard states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -133,90 +132,130 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      {showLanding ? (
-        <LandingPage 
-          onEnterConsole={() => setShowLanding(false)} 
-          onEnterTab={(tab) => setActiveTab(tab)} 
-        />
-      ) : (
-        <div className="min-h-screen bg-dark flex flex-row overflow-hidden relative font-jakarta">
+      <div className="min-h-screen bg-[#0e1116] text-white flex flex-col font-jakarta relative overflow-hidden">
         {/* Background glow assets */}
-        <div className="glow-purple -top-40 -left-40"></div>
-        <div className="glow-cyan bottom-10 right-10"></div>
+        <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-purple-accent/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-cyan-accent/5 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Sidebar navigation */}
-        <aside className="w-64 glass-panel border-r border-dark-border flex flex-col justify-between z-10">
-          <div>
-            <div className="p-6 flex items-center gap-3 cursor-pointer group" onClick={() => setShowLanding(true)}>
-              <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white transition-all group-hover:scale-105">
-                <Layers className="w-5 h-5" />
+        {/* TOP HEADER NAVIGATION BAR */}
+        <header className="w-full border-b border-white/5 bg-slate-900/30 backdrop-blur z-20">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="relative w-9 h-9 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
+                </svg>
+                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-600 border border-white/10 flex items-center justify-center text-[9px] font-bold text-white animate-pulse">
+                  <Activity className="w-2.5 h-2.5" />
+                </div>
               </div>
               <div>
-                <h2 className="font-bold text-[13px] font-outfit text-white tracking-wide">BET METRICS LAB</h2>
-                <span className="text-[10px] text-gray-400 block group-hover:text-purple-300 transition-colors">◄ Back to Portal</span>
+                <h2 className="font-bold text-base font-outfit text-white tracking-wide">Bet Metrics Lab</h2>
+                <span className="text-[9px] text-gray-400 block -mt-1 font-mono">Data Lakehouse Platform</span>
               </div>
             </div>
 
-            <nav className="px-4 mt-6 flex flex-col gap-2">
+            {/* Menu Links */}
+            <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-400">
               <button 
                 onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm ${activeTab === 'dashboard' ? 'bg-purple-accent text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'dashboard' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
               >
-                <LayoutDashboard className="w-4 h-4" /> Overview Dashboard
+                Dashboard
+              </button>
+              <button 
+                onClick={() => setActiveTab('knowledge')}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'knowledge' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
+              >
+                Knowledge Graph
               </button>
               <button 
                 onClick={() => setActiveTab('scrapers')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm ${activeTab === 'scrapers' ? 'bg-purple-accent text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'scrapers' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
               >
-                <Cpu className="w-4 h-4" /> Scrapy Crawlers
+                Crawlers
               </button>
               <button 
                 onClick={() => setActiveTab('ml')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm ${activeTab === 'ml' ? 'bg-purple-accent text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'ml' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
               >
-                <Brain className="w-4 h-4" /> ML Inference Sandbox
+                ML Sandbox
               </button>
               <button 
                 onClick={() => setActiveTab('rag')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm ${activeTab === 'rag' ? 'bg-purple-accent text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'rag' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
               >
-                <Search className="w-4 h-4" /> Semantic RAG
+                RAG Chat
               </button>
               <button 
                 onClick={() => setActiveTab('agents')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-sm ${activeTab === 'agents' ? 'bg-purple-accent text-white font-semibold' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'agents' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
               >
-                <Terminal className="w-4 h-4" /> Multi-Agents Console
+                Agent Console
               </button>
             </nav>
-          </div>
 
-          <div className="p-6">
-            <div className="flex items-center gap-2 text-xs text-cyan-accent font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-accent animate-pulse"></span>
-              Platform Status: Live
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-y-auto z-10 p-8">
-          
-          {/* Header */}
-          <header className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold font-outfit text-white tracking-wide">Data Lakehouse Console</h1>
-              <p className="text-gray-400 text-sm mt-1">Modular production layout hosting Scrapy cCRE, Flink streams, & CrewAI analytics.</p>
-            </div>
-            <div className="flex gap-4">
+            {/* Right side controls */}
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-cyan-accent font-medium bg-cyan-accent/5 border border-cyan-accent/20 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-accent animate-pulse" />
+                Live Status
+              </div>
               <button 
                 onClick={fetchDashboardMetrics}
-                className="px-4 py-2 text-sm bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition text-white"
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-full transition-all hover:shadow-[0_0_15px_rgba(220,38,38,0.4)]"
               >
                 Sync Database
               </button>
             </div>
-          </header>
+          </div>
+        </header>
+
+        {/* Scrollable sub-navbar for mobile screens */}
+        <div className="lg:hidden flex items-center gap-2 overflow-x-auto py-3 px-6 border-b border-white/5 bg-slate-950/20 scrollbar-none">
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('knowledge')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'knowledge' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            Knowledge Graph
+          </button>
+          <button 
+            onClick={() => setActiveTab('scrapers')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'scrapers' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            Crawlers
+          </button>
+          <button 
+            onClick={() => setActiveTab('ml')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'ml' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            ML Sandbox
+          </button>
+          <button 
+            onClick={() => setActiveTab('rag')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'rag' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            RAG Chat
+          </button>
+          <button 
+            onClick={() => setActiveTab('agents')}
+            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'agents' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+          >
+            Agent Console
+          </button>
+        </div>
+
+        {/* Centered Main Area */}
+        <main className="max-w-7xl w-full mx-auto px-6 py-8 flex-1 flex flex-col overflow-y-auto">
 
           {/* Real-time statuses (Task 2) */}
           <StreamingStatus />
@@ -313,6 +352,11 @@ export default function App() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* TAB 1.5: KNOWLEDGE GRAPH */}
+          {activeTab === 'knowledge' && (
+            <KnowledgeGraph transactions={transactions} />
           )}
 
           {/* TAB 2: SCRAPER AGENTS */}
@@ -431,7 +475,6 @@ export default function App() {
 
         </main>
       </div>
-      )}
     </ErrorBoundary>
   );
 }

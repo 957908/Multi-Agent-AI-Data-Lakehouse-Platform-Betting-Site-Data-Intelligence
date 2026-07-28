@@ -11,6 +11,7 @@ export interface Transaction {
   is_anomalous: boolean;
   datetime?: string;
   platform_name?: string;
+  method_name?: string;
 }
 
 export interface ChatMessage {

@@ -96,6 +96,14 @@ class Transaction(Base):
     platform = relationship("Platform", back_populates="transactions")
     payment_method = relationship("PaymentMethod", back_populates="transactions")
 
+    @property
+    def platform_name(self) -> str:
+        return self.platform.name if self.platform else "Unknown Platform"
+
+    @property
+    def method_name(self) -> str:
+        return self.payment_method.name if self.payment_method else "Unknown Method"
+
 class EmbeddingRecord(Base):
     __tablename__ = "embeddings"
 

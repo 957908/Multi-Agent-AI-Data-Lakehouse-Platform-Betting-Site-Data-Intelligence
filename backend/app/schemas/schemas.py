@@ -45,6 +45,8 @@ class TransactionResponse(TransactionBase):
     method_id: int
     is_anomalous: bool
     datetime: datetime
+    platform_name: Optional[str] = None
+    method_name: Optional[str] = None
 
     class Config:
         from_attributes = True
