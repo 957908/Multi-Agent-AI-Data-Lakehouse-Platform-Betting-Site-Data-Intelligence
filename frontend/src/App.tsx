@@ -27,9 +27,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import StreamingStatus from './components/StreamingStatus';
 import RAGChat from './components/RAGChat';
 import AgentConsole from './components/AgentConsole';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scrapers' | 'ml' | 'rag' | 'agents'>('dashboard');
+  const [showLanding, setShowLanding] = useState<boolean>(true);
   
   // Dashboard states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -131,7 +133,13 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-dark flex flex-row overflow-hidden relative font-jakarta">
+      {showLanding ? (
+        <LandingPage 
+          onEnterConsole={() => setShowLanding(false)} 
+          onEnterTab={(tab) => setActiveTab(tab)} 
+        />
+      ) : (
+        <div className="min-h-screen bg-dark flex flex-row overflow-hidden relative font-jakarta">
         {/* Background glow assets */}
         <div className="glow-purple -top-40 -left-40"></div>
         <div className="glow-cyan bottom-10 right-10"></div>
@@ -139,13 +147,13 @@ export default function App() {
         {/* Sidebar navigation */}
         <aside className="w-64 glass-panel border-r border-dark-border flex flex-col justify-between z-10">
           <div>
-            <div className="p-6 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-accent flex items-center justify-center text-white">
+            <div className="p-6 flex items-center gap-3 cursor-pointer group" onClick={() => setShowLanding(true)}>
+              <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white transition-all group-hover:scale-105">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-bold text-lg font-outfit text-white">AETHERIA</h2>
-                <span className="text-xs text-gray-400">Data Lakehouse</span>
+                <h2 className="font-bold text-[13px] font-outfit text-white tracking-wide">BET METRICS LAB</h2>
+                <span className="text-[10px] text-gray-400 block group-hover:text-purple-300 transition-colors">◄ Back to Portal</span>
               </div>
             </div>
 
@@ -423,6 +431,7 @@ export default function App() {
 
         </main>
       </div>
+      )}
     </ErrorBoundary>
   );
 }
