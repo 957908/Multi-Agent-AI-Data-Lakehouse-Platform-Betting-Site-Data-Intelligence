@@ -64,5 +64,29 @@ export const apiService = {
   async getVectorStats() {
     const res = await axios.get(`${API_URL}/vector/stats`);
     return res.data;
+  },
+
+  async downloadReportMarkdown() {
+    const res = await axios.get(`${API_URL}/agents/report/markdown`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/markdown' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bet_metrics_lab_audit_report.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+  async downloadReportJson() {
+    const res = await axios.get(`${API_URL}/agents/report/json`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bet_metrics_lab_audit_report.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
   }
 };

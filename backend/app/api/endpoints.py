@@ -192,6 +192,42 @@ def approve_agents(background_tasks: BackgroundTasks):
     return {"status": "triggered", "message": "Report approval received. Workflow resuming."}
 
 
+@router.get("/agents/report/markdown")
+def download_report_markdown():
+    """Returns the generated agent audit report as a downloadable Markdown file."""
+    report_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+        "ai_services", "agents", "agent_report.md"
+    )
+    if not os.path.exists(report_path):
+        raise HTTPException(status_code=404, detail="Report not yet generated. Please run the agent workflow first.")
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=report_path,
+        media_type="text/markdown",
+        filename="bet_metrics_lab_audit_report.md",
+        headers={"Content-Disposition": "attachment; filename=bet_metrics_lab_audit_report.md"}
+    )
+
+
+@router.get("/agents/report/json")
+def download_report_json():
+    """Returns the generated agent audit report as a downloadable JSON file."""
+    report_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+        "ai_services", "agents", "agent_report.json"
+    )
+    if not os.path.exists(report_path):
+        raise HTTPException(status_code=404, detail="Report not yet generated. Please run the agent workflow first.")
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=report_path,
+        media_type="application/json",
+        filename="bet_metrics_lab_audit_report.json",
+        headers={"Content-Disposition": "attachment; filename=bet_metrics_lab_audit_report.json"}
+    )
+
+
 @router.get("/rag/health")
 def get_rag_health():
     """Checks the health of the FAISS index and the underlying encoder."""

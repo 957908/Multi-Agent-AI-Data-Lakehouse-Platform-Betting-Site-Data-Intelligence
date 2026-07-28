@@ -11,7 +11,9 @@ import {
   UserCheck,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  Download,
+  FileJson
 } from 'lucide-react';
 import { apiService } from '../services/api';
 
@@ -82,6 +84,7 @@ export default function AgentConsole() {
   ]);
   const [activeNode, setActiveNode] = useState<string>('');
   const [isApproved, setIsApproved] = useState<boolean>(false);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
   // Poll status from backend
@@ -383,6 +386,50 @@ export default function AgentConsole() {
             <div ref={terminalEndRef} />
           </div>
         </div>
+
+        {/* Download Report Card — shown when workflow is complete */}
+        {status === 'SUCCESS' && (
+          <div className="glass-panel p-5 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl">
+                <CheckCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-emerald-400 font-outfit">Audit Report Ready</h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">Report compiled and saved. Download below.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  setIsDownloading('md');
+                  try { await apiService.downloadReportMarkdown(); } 
+                  catch { setLogs(prev => [...prev, '[LANGGRAPH ERROR] Report download failed — ensure backend is running.']); }
+                  setIsDownloading(null);
+                }}
+                disabled={isDownloading !== null}
+                className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-60"
+              >
+                <Download className="w-4 h-4" />
+                {isDownloading === 'md' ? 'Downloading...' : 'Download Audit Report (.md)'}
+              </button>
+              <button
+                onClick={async () => {
+                  setIsDownloading('json');
+                  try { await apiService.downloadReportJson(); }
+                  catch { setLogs(prev => [...prev, '[LANGGRAPH ERROR] JSON report download failed — ensure backend is running.']); }
+                  setIsDownloading(null);
+                }}
+                disabled={isDownloading !== null}
+                className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-bold bg-white/5 hover:bg-white/10 border border-emerald-500/20 text-emerald-400 rounded-xl transition-all disabled:opacity-60"
+              >
+                <FileJson className="w-4 h-4" />
+                {isDownloading === 'json' ? 'Downloading...' : 'Download Raw Data (.json)'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
