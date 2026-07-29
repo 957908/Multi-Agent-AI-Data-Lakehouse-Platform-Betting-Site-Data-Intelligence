@@ -28,11 +28,10 @@ import StreamingStatus from './components/StreamingStatus';
 import RAGChat from './components/RAGChat';
 import AgentConsole from './components/AgentConsole';
 import KnowledgeGraph from './components/KnowledgeGraph';
-import HomePage from './components/HomePage';
+import CommandCenter from './components/CommandCenter';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'knowledge' | 'scrapers' | 'ml' | 'rag' | 'agents'>('dashboard');
-  const [showHome, setShowHome] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'command' | 'dashboard' | 'knowledge' | 'scrapers' | 'ml' | 'rag' | 'agents' | 'scan' | 'transactions' | 'payments' | 'reports'>('command');
   
   // Dashboard states
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -62,26 +61,12 @@ export default function App() {
         setTransactions(data);
         const sum = data.reduce((acc: number, curr: any) => acc + curr.amount, 0);
         setTotalVolume(sum);
-        
         const anomalies = await apiService.getAnomalies();
         setAnomaliesCount(anomalies.length);
-      } else {
-        bootstrapMockTransactions();
       }
     } catch (e) {
-      console.log("Backend offline. Loading local fallback metrics...");
-      bootstrapMockTransactions();
+      console.log('Backend offline — no fallback data loaded. Real data only policy.');
     }
-  };
-
-  const bootstrapMockTransactions = () => {
-    const mockData: Transaction[] = [
-      { ref_number: "TXN_C101", user_id: "4829103", amount: 1500, type: "DEPOSIT", status: "SUCCESS", is_anomalous: false },
-      { ref_number: "TXN_C202", user_id: "4829103", amount: 900, type: "WITHDRAWAL", status: "SUCCESS", is_anomalous: false },
-      { ref_number: "TXN_C303", user_id: "10CRIC_PUBLIC", amount: 4200, type: "DEPOSIT", status: "SUCCESS", is_anomalous: false },
-      { ref_number: "TXN_ANOMALY_999", user_id: "4829103", amount: 250000, type: "WITHDRAWAL", status: "FAILED", is_anomalous: true }
-    ];
-    setTransactions(mockData);
   };
 
   // Trigger Scraper
@@ -134,146 +119,179 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      {showHome ? (
-        <HomePage
-          onEnterConsole={(tab) => {
-            if (tab) setActiveTab(tab);
-            setShowHome(false);
-          }}
-        />
-      ) : (
       <div className="min-h-screen bg-[#0e1116] text-white flex flex-col font-jakarta relative overflow-hidden">
         {/* Background glow assets */}
         <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-purple-accent/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-cyan-accent/5 rounded-full blur-[120px] pointer-events-none" />
 
         {/* TOP HEADER NAVIGATION BAR */}
-        <header className="w-full border-b border-white/5 bg-slate-900/30 backdrop-blur z-20">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            {/* Logo — click to go back home */}
+        <header className="w-full border-b border-white/5 bg-slate-900/30 backdrop-blur z-20 sticky top-0">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+            {/* Logo */}
             <div
-              className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => setShowHome(true)}
+              className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+              onClick={() => setActiveTab('command')}
             >
-              <div className="relative w-9 h-9 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:border-red-500/50 transition-all">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <div className="relative w-8 h-8 rounded-full bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500 group-hover:border-red-500/50 transition-all">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                   <path d="M2 12h20" />
                 </svg>
-                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-600 border border-white/10 flex items-center justify-center text-[9px] font-bold text-white animate-pulse">
-                  <Activity className="w-2.5 h-2.5" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-600 border border-black flex items-center justify-center">
+                  <Activity className="w-1.5 h-1.5 text-white" />
                 </div>
               </div>
               <div>
-                <h2 className="font-bold text-base font-outfit text-white tracking-wide group-hover:text-red-300 transition-colors">Bet Metrics Lab</h2>
-                <span className="text-[9px] text-gray-400 block -mt-1 font-mono group-hover:text-slate-300 transition-colors">← Back to Home</span>
+                <h2 className="font-bold text-sm font-outfit text-white tracking-wide group-hover:text-red-300 transition-colors">SentinelX</h2>
+                <span className="text-[8px] text-gray-500 block -mt-0.5 font-mono">Betting Intelligence</span>
               </div>
             </div>
 
-            {/* Menu Links */}
-            <nav className="hidden lg:flex items-center gap-5 text-xs font-semibold text-slate-400">
-              <button 
-                onClick={() => setActiveTab('dashboard')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'dashboard' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                Dashboard
-              </button>
-              <button 
-                onClick={() => setActiveTab('knowledge')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'knowledge' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                Knowledge Graph
-              </button>
-              <button 
-                onClick={() => setActiveTab('scrapers')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'scrapers' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                Crawlers
-              </button>
-              <button 
-                onClick={() => setActiveTab('ml')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'ml' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                ML Sandbox
-              </button>
-              <button 
-                onClick={() => setActiveTab('rag')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'rag' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                RAG Chat
-              </button>
-              <button 
-                onClick={() => setActiveTab('agents')}
-                className={`hover:text-white transition py-1.5 px-3 rounded-lg ${activeTab === 'agents' ? 'text-white bg-white/5 border border-white/10 font-bold' : ''}`}
-              >
-                Agent Console
-              </button>
+            {/* Nav tabs */}
+            <nav className="hidden lg:flex items-center gap-1 text-[11px] font-semibold text-slate-400 overflow-x-auto scrollbar-none">
+              {([
+                ['command', 'Command Center'],
+                ['dashboard', 'Dashboard'],
+                ['transactions', 'Transactions'],
+                ['payments', 'Payments'],
+                ['knowledge', 'Knowledge Graph'],
+                ['scrapers', 'Crawlers'],
+                ['ml', 'ML Sandbox'],
+                ['rag', 'RAG Chat'],
+                ['agents', 'Agent Console'],
+              ] as const).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${activeTab === tab ? 'text-white bg-white/8 border border-white/10 font-bold' : 'hover:text-white hover:bg-white/5'}`}
+                >
+                  {label}
+                </button>
+              ))}
             </nav>
 
-            {/* Right side controls */}
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-cyan-accent font-medium bg-cyan-accent/5 border border-cyan-accent/20 px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-accent animate-pulse" />
-                Live Status
+            {/* Right */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="hidden sm:flex items-center gap-1 text-[9px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live DB
               </div>
-              <button 
+              <button
                 onClick={fetchDashboardMetrics}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-full transition-all hover:shadow-[0_0_15px_rgba(220,38,38,0.4)]"
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg transition-all hover:shadow-[0_0_12px_rgba(220,38,38,0.4)]"
               >
-                Sync Database
+                Sync DB
               </button>
             </div>
           </div>
         </header>
 
-        {/* Scrollable sub-navbar for mobile screens */}
-        <div className="lg:hidden flex items-center gap-2 overflow-x-auto py-3 px-6 border-b border-white/5 bg-slate-950/20 scrollbar-none">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('knowledge')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'knowledge' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            Knowledge Graph
-          </button>
-          <button 
-            onClick={() => setActiveTab('scrapers')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'scrapers' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            Crawlers
-          </button>
-          <button 
-            onClick={() => setActiveTab('ml')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'ml' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            ML Sandbox
-          </button>
-          <button 
-            onClick={() => setActiveTab('rag')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'rag' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            RAG Chat
-          </button>
-          <button 
-            onClick={() => setActiveTab('agents')}
-            className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === 'agents' ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
-          >
-            Agent Console
-          </button>
+        {/* Mobile sub-nav */}
+        <div className="lg:hidden flex items-center gap-2 overflow-x-auto py-2 px-4 border-b border-white/5 bg-slate-950/20 scrollbar-none">
+          {([
+            ['command', 'Command Center'],
+            ['dashboard', 'Dashboard'],
+            ['transactions', 'Transactions'],
+            ['payments', 'Payments'],
+            ['knowledge', 'Knowledge Graph'],
+            ['scrapers', 'Crawlers'],
+            ['ml', 'ML Sandbox'],
+            ['rag', 'RAG Chat'],
+            ['agents', 'Agents'],
+          ] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`text-xs px-3 py-1.5 rounded-lg whitespace-nowrap ${activeTab === tab ? 'bg-white/5 text-white font-bold border border-white/10' : 'text-slate-400'}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Centered Main Area */}
-        <main className="max-w-7xl w-full mx-auto px-6 py-8 flex-1 flex flex-col overflow-y-auto">
+        {/* Main Area */}
+        <main className="max-w-7xl w-full mx-auto px-6 py-6 flex-1 flex flex-col overflow-y-auto">
 
-          {/* Real-time statuses (Task 2) */}
-          <StreamingStatus />
+          {/* TAB: COMMAND CENTER (default home) */}
+          {activeTab === 'command' && (
+            <CommandCenter onNavigate={(tab) => setActiveTab(tab as any)} />
+          )}
 
-          {/* TAB 1: OVERVIEW DASHBOARD */}
+          {/* TAB: TRANSACTIONS */}
+          {activeTab === 'transactions' && (
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold font-outfit text-white">All Transactions</h2>
+                <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-lg">{transactions.length} records — real data only</span>
+              </div>
+              {transactions.length === 0 ? (
+                <div className="text-center py-20 text-slate-500">
+                  <p className="text-lg font-semibold">No Transactions Available</p>
+                  <p className="text-sm mt-1">Start uvicorn backend to load 173 real transactions</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead>
+                      <tr className="border-b border-white/5 text-slate-500 uppercase text-[10px] tracking-wider">
+                        <th className="pb-3 pr-4">Ref #</th>
+                        <th className="pb-3 pr-4">Platform</th>
+                        <th className="pb-3 pr-4">Method</th>
+                        <th className="pb-3 pr-4">Type</th>
+                        <th className="pb-3 pr-4">Amount</th>
+                        <th className="pb-3 pr-4">Status</th>
+                        <th className="pb-3">Anomaly</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {transactions.map((tx, i) => (
+                        <tr key={i} className="hover:bg-white/2 transition-colors">
+                          <td className="py-2.5 pr-4 font-mono text-slate-400">{tx.ref_number}</td>
+                          <td className="py-2.5 pr-4 text-white font-semibold">{tx.platform_name || 'Not Available'}</td>
+                          <td className="py-2.5 pr-4 text-slate-300">{tx.method_name || 'Not Available'}</td>
+                          <td className="py-2.5 pr-4">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+                              {tx.type}
+                            </span>
+                          </td>
+                          <td className="py-2.5 pr-4 text-white">₹{tx.amount.toLocaleString()}</td>
+                          <td className="py-2.5 pr-4">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold border ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : tx.status === 'FAILED' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                          <td className="py-2.5">
+                            {tx.is_anomalous ? (
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold border bg-red-500/10 border-red-500/20 text-red-400">⚠ ANOMALY</span>
+                            ) : (
+                              <span className="text-slate-600 text-[9px]">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: PAYMENTS */}
+          {activeTab === 'payments' && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-lg font-bold font-outfit text-white">Payment Intelligence</h2>
+              <p className="text-sm text-slate-400">Platform → payment method mapping. Data sourced from real transactions only.</p>
+              <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-6">
+                <p className="text-slate-500 text-sm">Full payment details (min/max deposit, fees, processing time) require a deposit page scan.</p>
+                <p className="text-slate-600 text-xs mt-2">Use "New Scan" → enter platform URL → Playwright will collect deposit page data automatically.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Real-time statuses */}
+          {activeTab === 'dashboard' && <StreamingStatus />}
+
+          {/* TAB: OVERVIEW DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="flex flex-col gap-6">
               {/* Stats Cards */}
@@ -488,7 +506,6 @@ export default function App() {
 
         </main>
       </div>
-      )}
     </ErrorBoundary>
   );
 }
