@@ -116,6 +116,37 @@ class SemanticRAGPipeline:
                 return res
         return ""
 
+    def verify_answer_overlap(self, answer: str, context_list: list) -> bool:
+        """
+        Post-processing step that verifies generated answers against retrieved context
+        using term-overlap checking. Excludes common stopwords.
+        """
+        if not answer or not context_list:
+            return False
+            
+        stopwords = {"the", "a", "an", "and", "or", "but", "if", "then", "else", "to", "of", "in", "on", "at", "for", "with", "is", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did", "this", "that", "these", "those", "i", "you", "he", "she", "it", "we", "they"}
+        
+        # Extract unique lowercase words from the answer
+        import re
+        answer_words = set(re.findall(r'\b[a-z]{3,}\b', answer.lower()))
+        answer_keywords = answer_words - stopwords
+        
+        if not answer_keywords:
+            return True # No substantial words to check (e.g., short sentence or numbers)
+            
+        # Extract unique lowercase words from all context snippets
+        context_text = " ".join([c.get("content", "") for c in context_list]).lower()
+        context_words = set(re.findall(r'\b[a-z]{3,}\b', context_text))
+        
+        # Calculate overlap percentage
+        matched_words = answer_keywords.intersection(context_words)
+        overlap_ratio = len(matched_words) / len(answer_keywords)
+        
+        logger.info(f"[RAG VERIFICATION] Total keywords: {len(answer_keywords)}, Matched: {len(matched_words)}, Overlap: {overlap_ratio:.2%}")
+        
+        # Require at least 25% overlap for validation
+        return overlap_ratio >= 0.25
+
     def answer_query(self, query: str) -> dict:
         start_time = datetime.now().timestamp()
         
@@ -138,8 +169,21 @@ class SemanticRAGPipeline:
         
         # Call LLM
         answer = self.execute_llm_inference(prompt)
+        provider = settings.LLM_PROVIDER if answer else "static_rules_fallback"
         
-        # Static fallback rules if LLM is offline (Task 3 & 4 fallback)
+        # Verification check
+        is_verified = True
+        if answer:
+            # Check if LLM indicates lack of knowledge
+            if "i do not know" in answer.lower() or "lakehouse metadata" in answer.lower():
+                is_verified = True
+            else:
+                is_verified = self.verify_answer_overlap(answer, context_snippets)
+                if not is_verified:
+                    logger.warning("[RAG HALlUCINATION DETECTED] LLM answer failed term overlap verification. Appending warning flag.")
+                    answer += "\n\n[WARNING: This answer contains details that could not be verified against the stored database records.]"
+        
+        # Static fallback rules if LLM is offline
         if not answer:
             answer = self.static_fallback_generation(query, context_snippets)
             
@@ -151,7 +195,8 @@ class SemanticRAGPipeline:
             "answer": answer,
             "retrieved_context": context_snippets,
             "latency_seconds": latency,
-            "provider_used": settings.LLM_PROVIDER if answer else "static_rules_fallback"
+            "provider_used": provider,
+            "verified": is_verified
         }
 
     def static_fallback_generation(self, query: str, context_list: list) -> str:
