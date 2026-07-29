@@ -24,37 +24,35 @@ Access the running modules on your web environment or spin them up locally:
 
 ## 🏗️ Unified Data Pipeline & System Flow Diagram
 
-```
-[ Scrapy + Playwright Crawlers ] 
-             |  (Validates, exports raw JSON logs, rotates User-Agents)
-             v  (Falls back to direct PostgreSQL inserts if Kafka is offline)
-    [ Kafka Broker (9092) ]
-             |
-             v  (10s Watermarks event time, filters late arrivals, deduplicates)
-   [ Apache Flink Cleaner ]
-             |
-             v  (Writes partitioned JSON files to Bronze Layer)
-[ MinIO S3 Bronze Storage ]  (year=YYYY/month=MM/day=DD/platform=name)
-             |
-             v  (PySpark Schema Cast, deduplicates transaction reference IDs)
-[ Silver Table (Iceberg)  ]  (nessie.silver_transactions version-controlled)
-             |
-             v  (Aggregates channel volume metrics and platform risk scores)
-[ Gold Tables (Iceberg)   ]  (nessie.gold_payment_channels, nessie.gold_platform_metrics)
-             |
-             v  (Merge staging SQL UPSERT / SQLite INSERT OR REPLACE fallback)
-[ Relational Production DB]  (PostgreSQL betting_lakehouse database)
-             |
-   +---------+---------+
-   |                   |
-   v                   v
-[FAISS Vector Store] [CrewAI Agents]
-   |                   |
-   v (all-MiniLM-L6-v2)v (Coordinator -> Risk -> Payment -> Health -> Report)
-[Semantic RAG Engine]--+
-   | (Ollama / Gemini APIs with Term-Overlap NLP verification)
-   v
-[ FastAPI Backend (8085) ] <---> [ React Dashboard ]
+```mermaid
+graph TD
+    %% Styling configurations
+    classDef crawl fill:#E63946,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef kafka fill:#F77F00,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef flink fill:#D62828,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef lakehouse fill:#457B9D,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef database fill:#2A9D8F,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef ai fill:#7209B7,stroke:#1D3557,stroke-width:2px,color:#fff;
+    classDef ui fill:#028090,stroke:#1D3557,stroke-width:2px,color:#fff;
+
+    A[Scrapy & Playwright Spiders]:::crawl -->|Extracts raw payment pages| B(Kafka Topics - 9092):::kafka
+    A -.->|Fallback if Kafka offline| F[Relational SQLite/Postgres DB]:::database
+
+    B -->|Ingests stream| C[Apache Flink Tumbling Window]:::flink
+    C -->|Watermarks & Deduplicates| D[MinIO S3 Bronze Storage]:::lakehouse
+
+    D -->|PySpark Schema Cast| E[Apache Iceberg Silver Table]:::lakehouse
+    E -->|Volume & Risk Aggregations| G[Apache Iceberg Gold Tables]:::lakehouse
+    G -->|Merge SQL Staging UPSERT| F
+
+    F -->|Load Latest Records| H[(FAISS Vector Store)]:::ai
+    F -->|Expose Transaction Context| I[Multi-Agent Graph Coordinator]:::ai
+
+    H -->|Sentence-Transformers| J[Semantic RAG Engine]:::ai
+    I -->|LangGraph Execution Logs| J
+
+    J -->|NLP Overlap Verification| K[FastAPI REST Backend - 8085]:::ui
+    K <==>|Interactive KPI Charts| L[Vite React Dashboard UI]:::ui
 ```
 
 ---
