@@ -1,68 +1,126 @@
 import scrapy
 from scrapy_playwright.page import PageMethod
-from data_collection.items import ReviewItem, TransactionItem, ComplaintItem
+from datetime import datetime, timezone
+from data_collection.items import PaymentMethodItem
+from data_collection.spiders.melbet import classify_payment_type
+
 
 class Bet22Spider(scrapy.Spider):
     name = "bet22"
-    allowed_domains = ["22bet.com", "22play8.com", "local-test.com"]
-    start_urls = ["https://22bet.com/terms/"] # Safe default URL
+    platform_name = "22play"
+    platform_url = "https://22play.com"
+    deposit_page_url = "https://22play.com/en/payment"
+
+    PAYMENT_SELECTORS = [
+        ".payment-method",
+        ".payment-system",
+        ".payment-item",
+        ".deposit-method",
+        "[class*='payment']",
+        "[class*='deposit']",
+        "[class*='method']",
+        "img[alt]",
+    ]
 
     def start_requests(self):
-        for url in self.start_urls:
-            yield scrapy.Request(
-                url,
-                meta={
-                    "playwright": True,
-                    "playwright_include_page": True,
-                    "playwright_page_methods": [
-                        PageMethod("wait_for_timeout", 2000),
-                    ]
-                },
-                callback=self.parse
-            )
-
-    async def parse(self, response):
-        page = response.meta["playwright_page"]
-        
-        # 1. Yield multiple Transactions (deposits & withdrawals)
-        transactions = [
-            {"ref_number": "22BET_TXN_7761", "user_id": "USER_22BET_002", "amount": 500.0, "method": "UPI", "type": "DEPOSIT", "status": "SUCCESS"},
-            {"ref_number": "22BET_TXN_7762", "user_id": "USER_22BET_002", "amount": 2500.0, "method": "UPI", "type": "WITHDRAWAL", "status": "SUCCESS"},
-            {"ref_number": "22BET_TXN_7763", "user_id": "USER_22BET_159", "amount": 75000.0, "method": "NetBanking", "type": "DEPOSIT", "status": "SUCCESS"},
-            {"ref_number": "22BET_TXN_7764", "user_id": "USER_22BET_324", "amount": 10000.0, "method": "GPay UPI", "type": "DEPOSIT", "status": "FAILED"},
-            {"ref_number": "22BET_TXN_7765", "user_id": "USER_22BET_876", "amount": 15000.0, "method": "IMPS", "type": "WITHDRAWAL", "status": "PENDING"}
-        ]
-        for txn in transactions:
-            yield TransactionItem(
-                platform_name="22Bet",
-                ref_number=txn["ref_number"],
-                user_id=txn["user_id"],
-                amount=txn["amount"],
-                method=txn["method"],
-                type=txn["type"],
-                status=txn["status"]
-            )
-            
-        # 2. Yield multiple Reviews
-        reviews = [
-            {"author": "Amit R.", "rating": 3.0, "content": "Customer care replies slowly but withdrawal was completed in 1 day."},
-            {"author": "Karan J.", "rating": 4.0, "content": "Huge sportsbook library. Payment is fast via net banking."},
-            {"author": "Nikita D.", "rating": 4.5, "content": "App UI is smooth and customer support was very helpful during sign up."}
-        ]
-        for rev in reviews:
-            yield ReviewItem(
-                platform_name="22Bet",
-                author=rev["author"],
-                rating=rev["rating"],
-                content=rev["content"]
-            )
-
-        # 3. Yield multiple Complaints
-        yield ComplaintItem(
-            platform_name="22Bet",
-            title="KYC Pending Status",
-            description="Submitted passport copy and bank details, but validation is taking more than a week.",
-            status="UNRESOLVED"
+        yield scrapy.Request(
+            self.deposit_page_url,
+            meta={
+                "playwright": True,
+                "playwright_include_page": True,
+                "playwright_page_methods": [
+                    PageMethod("wait_for_timeout", 4000),
+                ],
+                "errback": self.errback,
+            },
+            callback=self.parse_deposit_page,
         )
 
+    async def parse_deposit_page(self, response):
+        page = response.meta["playwright_page"]
+        scrape_ts = datetime.now(timezone.utc).isoformat()
+        source_url = response.url
+
+        self.logger.info(f"[{self.platform_name}] Loaded deposit page: {source_url}")
+        found_methods = []
+
+        for selector in self.PAYMENT_SELECTORS:
+            elements = await page.query_selector_all(selector)
+            if elements:
+                for el in elements:
+                    text = (await el.inner_text()).strip()
+                    alt = await el.get_attribute("alt") or ""
+                    data_name = await el.get_attribute("data-name") or await el.get_attribute("title") or ""
+                    name = (text or alt or data_name).strip()
+                    if len(name) < 2 or name.lower() in ["deposit", "withdraw", "payment", "method", "more"]:
+                        continue
+                    found_methods.append(name)
+                if found_methods:
+                    break
+
+        seen = set()
+        unique_methods = [m for m in found_methods if not (seen.add(m) or m in seen)]
+
+        if not unique_methods:
+            self.logger.warning(f"[{self.platform_name}] No payment methods found. Authentication may be required.")
+            yield PaymentMethodItem(
+                platform_name=self.platform_name,
+                method_name="Not Yet Collected",
+                method_type="UNKNOWN",
+                deposit_supported=None,
+                withdrawal_supported=None,
+                min_deposit="Not Yet Collected",
+                max_deposit="Not Yet Collected",
+                min_withdrawal="Not Yet Collected",
+                max_withdrawal="Not Yet Collected",
+                fee="Not Yet Collected",
+                processing_time="Not Yet Collected",
+                source_url=source_url,
+                scrape_timestamp=scrape_ts,
+                collection_agent=self.name,
+                data_quality="NOT_SCRAPED",
+                scrape_error=f"No elements found on {source_url}"
+            )
+        else:
+            for method_name in unique_methods:
+                yield PaymentMethodItem(
+                    platform_name=self.platform_name,
+                    method_name=method_name,
+                    method_type=classify_payment_type(method_name),
+                    deposit_supported=True,
+                    withdrawal_supported=None,
+                    min_deposit="Not Yet Collected",
+                    max_deposit="Not Yet Collected",
+                    min_withdrawal="Not Yet Collected",
+                    max_withdrawal="Not Yet Collected",
+                    fee="Not Yet Collected",
+                    processing_time="Not Yet Collected",
+                    source_url=source_url,
+                    scrape_timestamp=scrape_ts,
+                    collection_agent=self.name,
+                    data_quality="REAL",
+                    scrape_error=None
+                )
+
         await page.close()
+
+    async def errback(self, failure):
+        self.logger.error(f"[{self.platform_name}] Request failed: {failure.getErrorMessage()}")
+        yield PaymentMethodItem(
+            platform_name=self.platform_name,
+            method_name="Not Yet Collected",
+            method_type="UNKNOWN",
+            deposit_supported=None,
+            withdrawal_supported=None,
+            min_deposit="Not Yet Collected",
+            max_deposit="Not Yet Collected",
+            min_withdrawal="Not Yet Collected",
+            max_withdrawal="Not Yet Collected",
+            fee="Not Yet Collected",
+            processing_time="Not Yet Collected",
+            source_url=self.deposit_page_url,
+            scrape_timestamp=datetime.now(timezone.utc).isoformat(),
+            collection_agent=self.name,
+            data_quality="SCRAPE_FAILED",
+            scrape_error=str(failure.getErrorMessage())
+        )
