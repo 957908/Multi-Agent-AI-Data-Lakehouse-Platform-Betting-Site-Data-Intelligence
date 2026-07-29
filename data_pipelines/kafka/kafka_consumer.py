@@ -27,11 +27,11 @@ os.makedirs(BRONZE_DIR, exist_ok=True)
 
 # Cleaned transactions and other raw topics
 TOPICS = [
-    "transactions-clean",
-    "reviews-raw",
-    "complaints-raw",
-    "news-raw",
-    "payment-methods-raw"
+    "sentinelx.clean.transactions",
+    "sentinelx.clean.payments",
+    "sentinelx.clean.reviews",
+    "sentinelx.clean.complaints",
+    "sentinelx.clean.news"
 ]
 DLQ_TOPIC = "dead-letter-queue"
 RETRY_TOPIC = "stream-retry"
@@ -151,7 +151,7 @@ class KafkaStreamConsumer:
         return False
 
     def save_to_bronze_layer(self, topic: str, payload: dict):
-        # Partition by year, month, day, and platform (Task 5)
+        # Partition by year, month, day, and platform
         import re
         raw_platform = payload.get("platform_name", "UNKNOWN")
         # Sanitize platform name to prevent path traversal (alphanumeric and underscores only)
@@ -196,18 +196,18 @@ class KafkaStreamConsumer:
             logger.error(f"Failed to publish event to DLQ: {e}")
 
     def process_message(self, topic: str, payload: dict, partition: int, offset: int):
-        # Structured Logging (Task 7)
+        # Structured Logging
         logger.info(f"[STAGE: INGEST] Topic: {topic}, Partition: {partition}, Offset: {offset}, Platform: {payload.get('platform_name')}, Ref: {payload.get('ref_number')}")
         
-        # Schema Validation (Task 4)
+        # Schema Validation
         ref_number = payload.get("ref_number")
         platform_name = payload.get("platform_name")
-        timestamp = payload.get("timestamp")
+        timestamp = payload.get("timestamp") or payload.get("scrape_timestamp")
         amount = payload.get("amount")
         status = payload.get("status")
         
         # Validate reviews, complaints, or transactions appropriately
-        if topic in ["reviews-raw", "complaints-raw", "news-raw"]:
+        if topic in ["sentinelx.clean.reviews", "sentinelx.clean.complaints", "sentinelx.clean.news", "sentinelx.clean.payments"]:
             # Reviews/Complaints validation
             if not platform_name:
                 metrics.rejected[(topic, "missing_platform")] = metrics.rejected.get((topic, "missing_platform"), 0) + 1

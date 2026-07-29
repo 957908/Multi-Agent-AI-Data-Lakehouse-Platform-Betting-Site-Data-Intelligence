@@ -2,7 +2,6 @@ import json
 import os
 import sys
 import time
-import signal
 import logging
 import http.server
 import threading
@@ -26,16 +25,31 @@ logging.basicConfig(
 logger = logging.getLogger("FlinkProcessor")
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+
+# Aligned topic mappings according to SentinelX Enterprise standards
+RAW_TRANSACTIONS_TOPIC = "sentinelx.raw.transactions"
+CLEAN_TRANSACTIONS_TOPIC = "sentinelx.clean.transactions"
+
+RAW_PAYMENTS_TOPIC = "sentinelx.raw.payments"
+CLEAN_PAYMENTS_TOPIC = "sentinelx.clean.payments"
+
+RAW_REVIEWS_TOPIC = "sentinelx.raw.reviews"
+CLEAN_REVIEWS_TOPIC = "sentinelx.clean.reviews"
+
+RAW_COMPLAINTS_TOPIC = "sentinelx.raw.complaints"
+CLEAN_COMPLAINTS_TOPIC = "sentinelx.clean.complaints"
+
+RAW_NEWS_TOPIC = "sentinelx.raw.news"
+CLEAN_NEWS_TOPIC = "sentinelx.clean.news"
+
 RAW_TOPICS = [
-    "10cric-raw-data",
-    "melbet-raw-data",
-    "22bet-raw-data",
-    "stake-raw-data",
-    "mostbet-raw-data",
-    "parimatch-raw-data",
-    "transactions-raw"
+    RAW_TRANSACTIONS_TOPIC,
+    RAW_PAYMENTS_TOPIC,
+    RAW_REVIEWS_TOPIC,
+    RAW_COMPLAINTS_TOPIC,
+    RAW_NEWS_TOPIC
 ]
-CLEAN_TOPIC = "transactions-clean"
+
 DLQ_TOPIC = "dead-letter-queue"
 
 # Flink Prometheus Metrics Server
@@ -119,7 +133,7 @@ class FlinkWindowProcessor:
             logger.info(f"Connected to Kafka brokers. Subscribed to raw topics: {RAW_TOPICS}")
             return True
         except Exception as e:
-            logger.error(f"Failed to connect Flink consumer/producer: {e}")
+            logger.warning(f"Failed to connect Flink consumer/producer to {self.bootstrap_servers}: {e}")
             return False
 
     def route_to_dlq(self, payload, error_message):
@@ -147,6 +161,7 @@ class FlinkWindowProcessor:
     def run(self):
         metrics.start()
         if not self.connect():
+            logger.warning("Flink processor running in STANDBY mode (Kafka offline).")
             return
 
         self.running = True
@@ -161,14 +176,32 @@ class FlinkWindowProcessor:
                         payload = msg.value
                         tx = payload.get("data", {}) if "data" in payload else payload
 
+                        # Check item class/type to route appropriately
                         ref = tx.get("ref_number")
                         platform_name = tx.get("platform_name")
                         amount = tx.get("amount")
-                        timestamp_str = tx.get("timestamp")
+                        timestamp_str = tx.get("timestamp") or tx.get("scrape_timestamp")
                         status = tx.get("status", "SUCCESS")
-                        method = tx.get("method", "UPI")
+                        method = tx.get("method") or tx.get("method_name", "UPI")
 
-                        # 1. Schema Validation (Task 4)
+                        # If it is reviews, complaints, news or payment method, bypass tumbling window aggregation
+                        if tp.topic in [RAW_PAYMENTS_TOPIC, RAW_REVIEWS_TOPIC, RAW_COMPLAINTS_TOPIC, RAW_NEWS_TOPIC]:
+                            if not platform_name:
+                                self.route_to_dlq(payload, "Schema validation failed: missing platform_name")
+                                continue
+                            
+                            # Map raw topic to clean topic
+                            clean_topic = tp.topic.replace(".raw.", ".clean.")
+                            try:
+                                if self.producer:
+                                    self.producer.send(clean_topic, value=payload)
+                                    self.producer.flush()
+                                logger.info(f"[STAGE: CLEAN] Topic: {clean_topic}, Platform: {platform_name}")
+                            except Exception as e:
+                                logger.error(f"Failed to publish cleaned event to {clean_topic}: {e}")
+                            continue
+
+                        # 1. Schema Validation for Transactions
                         if not ref or not platform_name or not timestamp_str or amount is None:
                             self.route_to_dlq(payload, "Schema validation failed: missing ref_number, platform_name, amount, or timestamp")
                             continue
@@ -182,7 +215,7 @@ class FlinkWindowProcessor:
                             self.route_to_dlq(payload, "Validation failed: amount must be numeric")
                             continue
 
-                        # 2. Event Timestamp Handling & Watermarks (Task 3)
+                        # 2. Event Timestamp Handling & Watermarks
                         try:
                             event_time = datetime.fromisoformat(timestamp_str)
                             event_time_ts = event_time.timestamp()
@@ -200,7 +233,7 @@ class FlinkWindowProcessor:
                             self.route_to_dlq(payload, f"Late event arrived after watermark. Event Time: {timestamp_str}")
                             continue
 
-                        # 3. Deduplication (Task 3)
+                        # 3. Deduplication
                         now_sec = time.time()
                         if ref in self.seen_refs:
                             metrics.duplicates += 1
@@ -221,7 +254,7 @@ class FlinkWindowProcessor:
                         metrics.processed += 1
                         self.clean_old_dedup_keys()
 
-                # Tumbling window aggregation trigger
+                # Tumbling window aggregation trigger for transactions
                 now = time.time()
                 if now - self.last_window_flush >= self.window_duration:
                     start_time = time.time()
@@ -250,21 +283,21 @@ class FlinkWindowProcessor:
 
         # Process clean events: Publish to clean topic & sync to database
         for item in self.window_data:
-            logger.info(f"[STAGE: CLEAN] Topic: {CLEAN_TOPIC}, Platform: {item['platform_name']}, Ref: {item['ref_number']}, ProcessingTime: {datetime.now().isoformat()}, ValidationResult: Cleaned")
+            logger.info(f"[STAGE: CLEAN] Topic: {CLEAN_TRANSACTIONS_TOPIC}, Platform: {item['platform_name']}, Ref: {item['ref_number']}, ProcessingTime: {datetime.now().isoformat()}, ValidationResult: Cleaned")
             
-            # 1. Publish to transactions-clean topic
+            # 1. Publish to cleaned transactions topic
             try:
                 if self.producer:
-                    self.producer.send(CLEAN_TOPIC, value=item)
+                    self.producer.send(CLEAN_TRANSACTIONS_TOPIC, value=item)
                     self.producer.flush()
             except Exception as e:
-                logger.error(f"Failed to publish cleaned event to {CLEAN_TOPIC}: {e}")
+                logger.error(f"Failed to publish cleaned event to {CLEAN_TRANSACTIONS_TOPIC}: {e}")
 
-            # 2. Database Enrichment & Upsert (Existing backward compatibility fallback)
+            # 2. Database Enrichment & Upsert (SQLite/Postgres)
             try:
                 platform = db.query(Platform).filter(Platform.name == item["platform_name"]).first()
                 if not platform:
-                    platform = Platform(name=item["platform_name"], url=f"https://{item['platform_name'].lower()}.com")
+                    platform = Platform(name=item["platform_name"], url=f"https://{item['platform_name'].lower().replace(' ', '')}.com")
                     db.add(platform)
                     db.commit()
                     db.refresh(platform)
