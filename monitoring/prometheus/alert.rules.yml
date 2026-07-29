@@ -1,0 +1,38 @@
+groups:
+  - name: sentinelx-alerts
+    rules:
+      - alert: IngestionPipelineOffline
+        expr: rate(flink_processed_events_total[1h]) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No incoming ingestion data flow detected for over 1 hour"
+          description: "Flink processed events rate has dropped to 0, indicating potential scraper failures or crawler pipeline downtime."
+
+      - alert: HighIngestionRejectionRate
+        expr: (rate(flink_rejected_events_total[5m]) / (rate(flink_processed_events_total[5m]) + 1)) * 100 > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High transaction record rejection rate detected"
+          description: "Over 10% of incoming transaction records are failing schema validations or being routed to DLQ."
+
+      - alert: SparkEtlFailureAlert
+        expr: rate(spark_rejected_rows_total[15m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Spark ETL pipeline rejected records"
+          description: "PySpark ETL process encountered corrupt/invalid transaction data in Bronze layer during partition loading."
+
+      - alert: ExcessiveAnomaliesDetected
+        expr: (spark_duplicate_rows_total / (spark_rows_read_total + 1)) * 100 > 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Excessive duplicate transaction references detected"
+          description: "Duplicate transaction attempts have exceeded 15% of the total ingested records in this execution window."

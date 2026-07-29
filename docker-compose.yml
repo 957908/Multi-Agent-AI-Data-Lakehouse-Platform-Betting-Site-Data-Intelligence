@@ -142,9 +142,22 @@ services:
       timeout: 5s
       retries: 3
 
+  # ----------------------------------------------------
+  # Uptime Kuma: Uptime & Alert Monitor
+  # ----------------------------------------------------
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: lakehouse-uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3002:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+
 volumes:
   postgres_data:
   kafka_data:
   minio_data:
   prometheus_data:
   grafana_data:
+  uptime_kuma_data:
