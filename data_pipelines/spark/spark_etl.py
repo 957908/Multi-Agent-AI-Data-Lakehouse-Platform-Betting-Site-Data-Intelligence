@@ -25,7 +25,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("SparkETL")
 
-BRONZE_DIR = os.path.join(STORAGE_DIR, "bronze")
+BRONZE_DIR = os.path.join(os.path.dirname(STORAGE_DIR), "storage", "bronze")
 BACKEND_DB = os.path.join(project_root, "backend", "app", "betting_lakehouse.db")
 
 # Prometheus Metrics Exporter (Task 7)
