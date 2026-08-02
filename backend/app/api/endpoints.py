@@ -17,7 +17,7 @@ from backend.app.schemas import schemas
 
 # RAG & Agent Modules integration
 from ai_services.RAG.lakehouse_rag import SemanticRAGPipeline
-from ai_services.agents.lakehouse_agents import CoordinatorAgent
+from ai_services.agents.lakehouse_agents import CoordinatorAgent, IntelligentAgent
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -25,6 +25,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 # Load models and RAG pipeline
 rag_pipeline = SemanticRAGPipeline()
 coordinator = CoordinatorAgent()
+intelligent_agent = IntelligentAgent()
 
 # Core Dependency to check JWT and return Current User
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
@@ -596,3 +597,17 @@ def get_diagnostics():
             response["clustering"] = {"status": "error", "message": str(e)}
             
     return response
+
+
+@router.post("/agents/intelligent-query")
+async def query_intelligent_agent(payload: dict):
+    """
+    Direct endpoint for 'ONE Intelligent Agent' executing task tools
+    based on natural language commands.
+    """
+    query = payload.get("query", "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Query string is required.")
+    response = await intelligent_agent.execute_task(query)
+    return response
+

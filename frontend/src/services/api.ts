@@ -160,5 +160,10 @@ export const apiService = {
     a.download = 'sentinelx_audit_report.json';
     document.body.appendChild(a); a.click(); a.remove();
     window.URL.revokeObjectURL(url);
+  },
+
+  async queryIntelligentAgent(query: string) {
+    const res = await axios.post(`${API_URL}/agents/intelligent-query`, { query });
+    return res.data;
   }
 };

@@ -87,6 +87,40 @@ export default function AgentConsole() {
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
+  // ONE Intelligent Agent state hooks
+  const [intelligentInput, setIntelligentInput] = useState<string>('');
+  const [intelligentLogs, setIntelligentLogs] = useState<string[]>([
+    "[INTELLIGENT_AGENT] Idle. Awaiting user command input..."
+  ]);
+  const [intelligentOutput, setIntelligentOutput] = useState<any>(null);
+  const [intelligentLoading, setIntelligentLoading] = useState<boolean>(false);
+
+  const handleExecuteIntelligentCommand = async (cmdText?: string) => {
+    const textToSend = cmdText || intelligentInput;
+    if (!textToSend.trim()) return;
+
+    setIntelligentLoading(true);
+    setIntelligentOutput(null);
+    setIntelligentLogs([`[INTELLIGENT_AGENT] Querying agent: "${textToSend}"`]);
+
+    try {
+      const res = await apiService.queryIntelligentAgent(textToSend);
+      if (res.logs) {
+        setIntelligentLogs(res.logs);
+      }
+      if (res.error) {
+        setIntelligentLogs(prev => [...prev, `[ERROR] Tool execution failed: ${res.error}`]);
+      } else {
+        setIntelligentOutput(res.output);
+      }
+    } catch (err: any) {
+      setIntelligentLogs(prev => [...prev, `[ERROR] Failed to query endpoint: ${err.message}`]);
+    } finally {
+      setIntelligentLoading(false);
+      if (!cmdText) setIntelligentInput('');
+    }
+  };
+
   // Poll status from backend
   const fetchStatus = async () => {
     try {
@@ -307,6 +341,92 @@ export default function AgentConsole() {
               </div>
             );
           })}
+        </div>
+
+        {/* ONE Intelligent Agent - Tool Execution Console */}
+        <div className="glass-panel p-6 rounded-2xl border border-white/5 bg-slate-950/40 mt-6 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-xl">
+              <Cpu className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-md font-bold text-white font-outfit">ONE Intelligent Agent</h3>
+              <p className="text-[11px] text-slate-400">Execute workflow actions across tools using the ReAct orchestration framework</p>
+            </div>
+          </div>
+
+          {/* Quick Command Chips */}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-[10px] font-semibold text-slate-500 mr-1 flex items-center">Presets:</span>
+            {[
+              { label: 'Scrape Melbet Cashier', cmd: 'scrape melbet cashier' },
+              { label: 'Run Spark Ingestion ETL', cmd: 'run spark etl pipeline' },
+              { label: 'Check 250k Anomaly', cmd: 'check anomaly for 250000 INR' },
+              { label: 'FAISS Vector Search', cmd: 'vector search Paytm' },
+              { label: 'Generate Compliance Report', cmd: 'generate compliance report' },
+              { label: 'Query SQL Table Stats', cmd: 'query table silver_transactions' },
+            ].map((preset, pIdx) => (
+              <button
+                key={pIdx}
+                disabled={intelligentLoading}
+                onClick={() => handleExecuteIntelligentCommand(preset.cmd)}
+                className="px-2.5 py-1 text-[10px] font-mono rounded-lg bg-indigo-950/40 hover:bg-indigo-900/40 border border-indigo-500/20 text-indigo-300 hover:text-indigo-200 transition-all"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Prompt input field */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={intelligentInput}
+              onChange={(e) => setIntelligentInput(e.target.value)}
+              disabled={intelligentLoading}
+              placeholder="Type a natural language instruction or choose a preset action..."
+              className="flex-1 px-4 py-2.5 text-xs bg-slate-900/60 border border-white/5 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleExecuteIntelligentCommand();
+              }}
+            />
+            <button
+              onClick={() => handleExecuteIntelligentCommand()}
+              disabled={intelligentLoading || !intelligentInput.trim()}
+              className="px-5 py-2.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all disabled:opacity-50"
+            >
+              {intelligentLoading ? 'Processing...' : 'Execute Tool'}
+            </button>
+          </div>
+
+          {/* Sub-Terminal logs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Agent Trace Logs */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Thought & Action Trace</span>
+              <div className="h-[140px] overflow-y-auto font-mono text-[9px] leading-relaxed p-3 bg-black/50 rounded-xl border border-white/5 text-indigo-300">
+                {intelligentLogs.map((log, idx) => (
+                  <div key={idx}>{log}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Structured Output Screen */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tool Execution Output</span>
+              <div className="h-[140px] overflow-y-auto font-mono text-[9px] leading-relaxed p-3 bg-black/50 rounded-xl border border-white/5 text-emerald-400">
+                {intelligentOutput ? (
+                  typeof intelligentOutput === 'object' ? (
+                    <pre className="whitespace-pre-wrap">{JSON.stringify(intelligentOutput, null, 2)}</pre>
+                  ) : (
+                    <div>{intelligentOutput}</div>
+                  )
+                ) : (
+                  <span className="text-slate-500 italic">No output received yet.</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
